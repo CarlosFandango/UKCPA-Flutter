@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../widgets/widgets.dart';
 
 /// Placeholder course list screen for Slice 1.1
 /// 
@@ -10,10 +11,8 @@ class CourseListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Courses'),
-      ),
+    return MainAppScaffold(
+      title: 'Courses',
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),

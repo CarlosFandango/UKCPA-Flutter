@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../widgets/widgets.dart';
 
 /// Placeholder home screen for Slice 1.1
 /// 
@@ -11,20 +12,18 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('UKCPA'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.account_circle),
-            onPressed: () => context.go('/account'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.shopping_basket),
-            onPressed: () => context.go('/basket'),
-          ),
-        ],
-      ),
+    return MainAppScaffold(
+      title: 'UKCPA',
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.account_circle),
+          onPressed: () => context.goToAccount(),
+        ),
+        IconButton(
+          icon: const Icon(Icons.shopping_basket),
+          onPressed: () => context.goToBasket(),
+        ),
+      ],
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -49,9 +48,9 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: () => context.go('/courses'),
-                child: const Text('Browse Courses'),
+              PrimaryButton(
+                text: 'Browse Courses',
+                onPressed: () => context.goToCourses(),
               ),
             ],
           ),
