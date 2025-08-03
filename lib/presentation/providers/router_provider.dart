@@ -111,30 +111,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
     ],
-    errorBuilder: (context, state) => Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
-            const SizedBox(height: 16),
-            Text(
-              'Page not found',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              state.error?.toString() ?? 'Unknown error',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => context.go('/home'),
-              child: const Text('Go to Home'),
-            ),
-          ],
-        ),
-      ),
+    errorBuilder: (context, state) => AppNotFoundPage(
+      error: state.error?.toString(),
+      uri: state.uri.toString(),
     ),
   );
 });
@@ -156,6 +135,7 @@ class RouterRefreshNotifier extends ChangeNotifier {
 /// Check if a route requires authentication
 bool _isProtectedRoute(String route) {
   const protectedRoutes = [
+    '/home',
     '/checkout',
     '/account',
     '/courses', // Course browsing requires auth for full features
@@ -191,14 +171,300 @@ bool _isValidRedirect(String redirect) {
   return validPrefixes.any((prefix) => redirect.startsWith(prefix));
 }
 
-// Navigation helpers
+/// Enhanced navigation helpers with validation and safety
 extension GoRouterExtension on BuildContext {
+  // Basic navigation methods
   void goHome() => go('/home');
-  void goToLogin() => go('/auth/login');
+  void goToLogin({String? redirectPath}) {
+    if (redirectPath != null && redirectPath.isNotEmpty) {
+      go('/auth/login?redirect=${Uri.encodeComponent(redirectPath)}');
+    } else {
+      go('/auth/login');
+    }
+  }
+  void goToRegister() => go('/auth/register');
+  
+  // Course navigation
   void goToCourses() => go('/courses');
-  void goToCourse(String id) => go('/courses/$id');
+  void goToCourse(String id) {
+    if (id.isNotEmpty) {
+      go('/courses/$id');
+    } else {
+      goToCourses();
+    }
+  }
+  
+  // Shopping navigation
   void goToBasket() => go('/basket');
   void goToCheckout() => go('/checkout');
+  
+  // Account navigation
   void goToAccount() => go('/account');
   void goToOrders() => go('/account/orders');
+  
+  // Safe navigation with fallback
+  void goToPath(String path, {String? fallback}) {
+    try {
+      if (_isValidInternalPath(path)) {
+        go(path);
+      } else if (fallback != null) {
+        go(fallback);
+      } else {
+        goHome();
+      }
+    } catch (e) {
+      if (fallback != null) {
+        go(fallback);
+      } else {
+        goHome();
+      }
+    }
+  }
+  
+  // Push navigation (for modal/detail views)
+  void pushToCourse(String id) {
+    if (id.isNotEmpty) {
+      push('/courses/$id');
+    }
+  }
+  
+  void pushToOrders() => push('/account/orders');
+  
+  // Back navigation with safety
+  void goBackSafe() {
+    if (canPop()) {
+      pop();
+    } else {
+      goHome();
+    }
+  }
+  
+  // Check if we can go back
+  bool canGoBack() => canPop();
+  
+  // Logout navigation
+  void goToLoginAfterLogout() {
+    go('/auth/login');
+  }
+}
+
+/// Additional route utilities
+class AppRoutes {
+  static const String splash = '/';
+  static const String login = '/auth/login';
+  static const String register = '/auth/register';
+  static const String home = '/home';
+  static const String courses = '/courses';
+  static const String basket = '/basket';
+  static const String checkout = '/checkout';
+  static const String account = '/account';
+  static const String orders = '/account/orders';
+  
+  /// Generate course detail route
+  static String courseDetail(String id) => '/courses/$id';
+  
+  /// Generate login with redirect
+  static String loginWithRedirect(String redirectPath) => 
+    '/auth/login?redirect=${Uri.encodeComponent(redirectPath)}';
+  
+  /// Get all available routes
+  static List<String> get allRoutes => [
+    splash,
+    login,
+    register,
+    home,
+    courses,
+    basket,
+    checkout,
+    account,
+    orders,
+  ];
+  
+  /// Check if route requires authentication
+  static bool isProtectedRoute(String route) => _isProtectedRoute(route);
+  
+  /// Check if route is public
+  static bool isPublicRoute(String route) => !_isProtectedRoute(route);
+}
+
+/// Validate if a path is a valid internal app route
+bool _isValidInternalPath(String path) {
+  if (path.isEmpty || !path.startsWith('/')) return false;
+  
+  final validPaths = [
+    '/',
+    '/auth/login',
+    '/auth/register', 
+    '/home',
+    '/courses',
+    '/basket',
+    '/checkout',
+    '/account',
+    '/account/orders',
+  ];
+  
+  // Check exact matches
+  if (validPaths.contains(path)) return true;
+  
+  // Check course detail pattern
+  final courseDetailRegex = RegExp(r'^/courses/[a-zA-Z0-9_-]+$');
+  if (courseDetailRegex.hasMatch(path)) return true;
+  
+  return false;
+}
+
+/// Custom 404 page component
+class AppNotFoundPage extends StatelessWidget {
+  final String? error;
+  final String? uri;
+  
+  const AppNotFoundPage({
+    super.key,
+    this.error,
+    this.uri,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Page Not Found'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // 404 Icon
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(60),
+                ),
+                child: Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: theme.colorScheme.onErrorContainer,
+                ),
+              ),
+              
+              const SizedBox(height: 32),
+              
+              // Title
+              Text(
+                'Page Not Found',
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Description
+              Text(
+                'The page you\'re looking for doesn\'t exist or has been moved.',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              
+              if (uri != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Requested: $uri',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontFamily: 'monospace',
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                  ),
+                ),
+              ],
+              
+              const SizedBox(height: 32),
+              
+              // Action buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: () => context.goBackSafe(),
+                    icon: const Icon(Icons.arrow_back),
+                    label: const Text('Go Back'),
+                  ),
+                  
+                  const SizedBox(width: 16),
+                  
+                  FilledButton.icon(
+                    onPressed: () => context.goHome(),
+                    icon: const Icon(Icons.home),
+                    label: const Text('Home'),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Additional navigation options
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 16,
+                children: [
+                  TextButton(
+                    onPressed: () => context.goToCourses(),
+                    child: const Text('Browse Courses'),
+                  ),
+                  TextButton(
+                    onPressed: () => context.goToBasket(),
+                    child: const Text('View Basket'),
+                  ),
+                  TextButton(
+                    onPressed: () => context.goToAccount(),
+                    child: const Text('My Account'),
+                  ),
+                ],
+              ),
+              
+              if (error != null) ...[
+                const SizedBox(height: 32),
+                ExpansionTile(
+                  title: Text(
+                    'Technical Details',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        error!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontFamily: 'monospace',
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
