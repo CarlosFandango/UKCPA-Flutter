@@ -14,14 +14,12 @@ import '../screens/account/orders_screen.dart';
 import 'auth_provider.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
+  final isAuthenticated = ref.watch(isAuthenticatedProvider);
   
   return GoRouter(
     initialLocation: '/',
     debugLogDiagnostics: true,
-    refreshListenable: authState,
     redirect: (context, state) {
-      final isAuthenticated = authState.isAuthenticated;
       final isAuthRoute = state.matchedLocation.startsWith('/auth');
       
       // Redirect to login if not authenticated and trying to access protected routes
