@@ -1,53 +1,271 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../providers/auth_provider.dart';
+import 'widgets/auth_text_field.dart';
 
-/// Placeholder login screen for Slice 1.1
+/// Login screen with form validation and auth integration
 /// 
-/// This will be fully implemented in Slice 1.5
-class LoginScreen extends StatelessWidget {
+/// Provides email/password login with proper error handling,
+/// loading states, and navigation integration.
+class LoginScreen extends ConsumerStatefulWidget {
   final String? redirectPath;
   
   const LoginScreen({super.key, this.redirectPath});
 
   @override
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final authError = ref.watch(authErrorProvider);
     
+    // Listen for auth state changes
+    ref.listen<AuthState>(authStateProvider, (previous, next) {
+      if (next is AuthStateAuthenticated) {
+        // Navigate to redirect path or home
+        final redirectTo = widget.redirectPath ?? '/home';
+        context.go(redirectTo);
+      }
+    });
+
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      body: Center(
-        child: Padding(
+      body: SafeArea(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.login,
-                size: 80,
-                color: theme.colorScheme.primary,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Login Screen',
-                style: theme.textTheme.headlineMedium,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Placeholder for Slice 1.5',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 40),
+                
+                // App Logo and Title
+                Center(
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: theme.colorScheme.primary.withOpacity(0.3),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.school,
+                          size: 50,
+                          color: theme.colorScheme.onPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Welcome Back',
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Sign in to your UKCPA account',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              if (redirectPath != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  'Redirect: $redirectPath',
-                  style: theme.textTheme.bodySmall,
+                
+                const SizedBox(height: 48),
+                
+                // Email Field
+                AuthTextField(
+                  labelText: 'Email',
+                  hintText: 'Enter your email address',
+                  controller: _emailController,
+                  isEmail: true,
+                  textInputAction: TextInputAction.next,
+                  enabled: !_isLoading,
+                  validator: AuthValidators.validateEmail,
                 ),
+                
+                const SizedBox(height: 16),
+                
+                // Password Field
+                AuthTextField(
+                  labelText: 'Password',
+                  hintText: 'Enter your password',
+                  controller: _passwordController,
+                  isPassword: true,
+                  textInputAction: TextInputAction.done,
+                  enabled: !_isLoading,
+                  validator: AuthValidators.validatePassword,
+                  onEditingComplete: _isLoading ? null : _handleLogin,
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Error Display
+                if (authError != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: theme.colorScheme.error.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: theme.colorScheme.onErrorContainer,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            authError,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onErrorContainer,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.close,
+                            color: theme.colorScheme.onErrorContainer,
+                            size: 18,
+                          ),
+                          onPressed: () {
+                            ref.read(authStateProvider.notifier).clearError();
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                
+                // Login Button
+                FilledButton(
+                  onPressed: _isLoading ? null : _handleLogin,
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: _isLoading
+                    ? SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            theme.colorScheme.onPrimary,
+                          ),
+                        ),
+                      )
+                    : Text(
+                        'Sign In',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: theme.colorScheme.onPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Register Link
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Don't have an account? ",
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _isLoading ? null : () {
+                        context.go('/auth/register');
+                      },
+                      child: Text(
+                        'Sign Up',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 40),
               ],
-            ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _handleLogin() async {
+    // Clear any previous errors
+    ref.read(authStateProvider.notifier).clearError();
+    
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+      
+      final result = await ref.read(authStateProvider.notifier).login(email, password);
+      
+      if (!result.isSuccess && mounted) {
+        // Error will be shown via authErrorProvider
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 }
