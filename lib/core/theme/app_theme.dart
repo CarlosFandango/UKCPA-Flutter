@@ -46,7 +46,6 @@ class AppTheme {
         color: textPrimary,
         fontSize: 20,
         fontWeight: FontWeight.w600,
-        fontFamily: 'Larken',
       ),
     ),
     
@@ -136,19 +135,16 @@ class AppTheme {
         fontSize: 32,
         fontWeight: FontWeight.w700,
         color: textPrimary,
-        fontFamily: 'Larken',
       ),
       displayMedium: TextStyle(
         fontSize: 28,
         fontWeight: FontWeight.w600,
         color: textPrimary,
-        fontFamily: 'Larken',
       ),
       displaySmall: TextStyle(
         fontSize: 24,
         fontWeight: FontWeight.w600,
         color: textPrimary,
-        fontFamily: 'Larken',
       ),
       headlineLarge: TextStyle(
         fontSize: 20,
@@ -240,7 +236,6 @@ class AppTheme {
         color: Colors.white,
         fontSize: 20,
         fontWeight: FontWeight.w600,
-        fontFamily: 'Larken',
       ),
     ),
     

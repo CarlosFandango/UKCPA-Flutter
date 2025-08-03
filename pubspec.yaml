@@ -112,17 +112,17 @@ flutter:
     - assets/translations/
     - .env
   
-  fonts:
-    - family: Larken
-      fonts:
-        - asset: assets/fonts/Larken-Regular.ttf
-        - asset: assets/fonts/Larken-Bold.ttf
-          weight: 700
-    - family: Hando
-      fonts:
-        - asset: assets/fonts/Hando-Regular.ttf
-        - asset: assets/fonts/Hando-Bold.ttf
-          weight: 700
+# fonts:
+  #   - family: Larken
+  #     fonts:
+  #       - asset: assets/fonts/Larken-Regular.ttf
+  #       - asset: assets/fonts/Larken-Bold.ttf
+  #         weight: 700
+  #   - family: Hando
+  #     fonts:
+  #       - asset: assets/fonts/Hando-Regular.ttf
+  #       - asset: assets/fonts/Hando-Bold.ttf
+  #         weight: 700
 
 flutter_launcher_icons:
   android: true
