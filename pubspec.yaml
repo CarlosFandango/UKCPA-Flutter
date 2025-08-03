@@ -1,0 +1,132 @@
+name: ukcpa_flutter
+description: UKCPA Mobile Application for course booking and management
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State Management
+  flutter_riverpod: ^2.4.0
+  riverpod_annotation: ^2.3.0
+  
+  # GraphQL
+  graphql_flutter: ^5.1.2
+  
+  # Navigation
+  go_router: ^12.0.0
+  
+  # Storage
+  flutter_secure_storage: ^9.0.0
+  hive_flutter: ^1.1.0
+  shared_preferences: ^2.2.0
+  
+  # UI Components
+  flutter_screenutil: ^5.9.0
+  cached_network_image: ^3.3.0
+  shimmer: ^3.0.0
+  flutter_svg: ^2.0.7
+  lottie: ^2.6.0
+  
+  # Forms & Validation
+  flutter_form_builder: ^9.1.0
+  form_builder_validators: ^11.0.0
+  
+  # Payment
+  flutter_stripe: ^9.5.0
+  
+  # Video
+  video_player: ^2.8.0
+  chewie: ^1.7.0
+  
+  # Authentication
+  google_sign_in: ^6.1.5
+  local_auth: ^2.1.0
+  
+  # Utilities
+  intl: ^0.19.0
+  url_launcher: ^6.2.0
+  share_plus: ^7.2.0
+  connectivity_plus: ^5.0.0
+  device_info_plus: ^9.1.0
+  package_info_plus: ^4.2.0
+  
+  # Platform Features
+  firebase_core: ^2.24.0
+  firebase_messaging: ^14.7.0
+  firebase_crashlytics: ^3.4.0
+  firebase_analytics: ^10.7.0
+  permission_handler: ^11.0.0
+  
+  # Date & Time
+  table_calendar: ^3.0.9
+  flutter_datetime_picker_plus: ^2.1.0
+  
+  # HTTP & Networking
+  dio: ^5.3.0
+  pretty_dio_logger: ^1.3.1
+  
+  # Environment
+  flutter_dotenv: ^5.1.0
+  
+  # Logging
+  logger: ^2.0.0
+  
+  # Image
+  image_picker: ^1.0.0
+  image_cropper: ^5.0.0
+  
+  # Icons
+  cupertino_icons: ^1.0.6
+  flutter_launcher_icons: ^0.13.1
+  
+  # JSON Annotation
+  json_annotation: ^4.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  build_runner: ^2.4.0
+  riverpod_generator: ^2.3.0
+  json_serializable: ^6.7.0
+  freezed: ^2.4.0
+  freezed_annotation: ^2.4.0
+  mockito: ^5.4.0
+  integration_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/animations/
+    - assets/translations/
+    - .env
+  
+  fonts:
+    - family: Larken
+      fonts:
+        - asset: assets/fonts/Larken-Regular.ttf
+        - asset: assets/fonts/Larken-Bold.ttf
+          weight: 700
+    - family: Hando
+      fonts:
+        - asset: assets/fonts/Hando-Regular.ttf
+        - asset: assets/fonts/Hando-Bold.ttf
+          weight: 700
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icons/app_icon_adaptive.png"
