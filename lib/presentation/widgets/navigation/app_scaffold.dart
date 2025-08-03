@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../providers/router_provider.dart';
 import 'bottom_nav_bar.dart';
 
 /// Main app scaffold that wraps screens with bottom navigation

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import '../../providers/router_provider.dart';
 import '../../widgets/widgets.dart';
 
 /// Placeholder home screen for Slice 1.1

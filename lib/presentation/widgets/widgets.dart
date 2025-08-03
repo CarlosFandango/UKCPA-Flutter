@@ -22,7 +22,6 @@ export 'forms/app_text_field.dart';
 // Common widgets
 export 'common/app_card.dart';
 export 'common/loading_states.dart';
-export 'common/app_scaffold.dart';
 
 // Navigation widgets
 export 'navigation/bottom_nav_bar.dart';
