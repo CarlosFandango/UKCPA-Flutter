@@ -24,6 +24,10 @@ export 'common/app_card.dart';
 export 'common/loading_states.dart';
 export 'common/app_scaffold.dart';
 
+// Navigation widgets
+export 'navigation/bottom_nav_bar.dart';
+export 'navigation/app_scaffold.dart';
+
 // Legacy auth widgets (will be migrated to use the new components)
 export 'forms/app_text_field.dart' show FormValidators;
 
