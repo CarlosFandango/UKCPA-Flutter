@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
-import 'widgets/auth_text_field.dart';
+import '../../widgets/widgets.dart';
 
 /// Registration screen with form validation and auth integration
 /// 
@@ -110,59 +110,59 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: 40),
                 
                 // First Name Field
-                AuthTextField(
+                AppTextField(
                   labelText: 'First Name',
                   hintText: 'Enter your first name',
                   controller: _firstNameController,
                   textInputAction: TextInputAction.next,
                   enabled: !_isLoading,
                   prefixIcon: const Icon(Icons.person_outline),
-                  validator: (value) => AuthValidators.validateName(value, 'First name'),
+                  validator: (value) => FormValidators.validateName(value, 'First name'),
                 ),
                 
                 const SizedBox(height: 16),
                 
                 // Last Name Field
-                AuthTextField(
+                AppTextField(
                   labelText: 'Last Name',
                   hintText: 'Enter your last name',
                   controller: _lastNameController,
                   textInputAction: TextInputAction.next,
                   enabled: !_isLoading,
                   prefixIcon: const Icon(Icons.person_outline),
-                  validator: (value) => AuthValidators.validateName(value, 'Last name'),
+                  validator: (value) => FormValidators.validateName(value, 'Last name'),
                 ),
                 
                 const SizedBox(height: 16),
                 
                 // Email Field
-                AuthTextField(
+                AppTextField(
                   labelText: 'Email',
                   hintText: 'Enter your email address',
                   controller: _emailController,
                   isEmail: true,
                   textInputAction: TextInputAction.next,
                   enabled: !_isLoading,
-                  validator: AuthValidators.validateEmail,
+                  validator: FormValidators.validateEmail,
                 ),
                 
                 const SizedBox(height: 16),
                 
                 // Password Field
-                AuthTextField(
+                AppTextField(
                   labelText: 'Password',
                   hintText: 'Create a password (min. 6 characters)',
                   controller: _passwordController,
                   isPassword: true,
                   textInputAction: TextInputAction.next,
                   enabled: !_isLoading,
-                  validator: AuthValidators.validatePassword,
+                  validator: FormValidators.validatePassword,
                 ),
                 
                 const SizedBox(height: 16),
                 
                 // Confirm Password Field
-                AuthTextField(
+                AppTextField(
                   labelText: 'Confirm Password',
                   hintText: 'Confirm your password',
                   controller: _confirmPasswordController,
@@ -170,7 +170,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   textInputAction: TextInputAction.done,
                   enabled: !_isLoading,
                   prefixIcon: const Icon(Icons.lock_outline),
-                  validator: (value) => AuthValidators.validatePasswordConfirmation(
+                  validator: (value) => FormValidators.validatePasswordConfirmation(
                     value, 
                     _passwordController.text,
                   ),
@@ -223,32 +223,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ],
                 
                 // Register Button
-                FilledButton(
-                  onPressed: _isLoading ? null : _handleRegister,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _isLoading
-                    ? SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            theme.colorScheme.onPrimary,
-                          ),
-                        ),
-                      )
-                    : Text(
-                        'Create Account',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: theme.colorScheme.onPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                PrimaryButton(
+                  text: 'Create Account',
+                  onPressed: _handleRegister,
+                  isLoading: _isLoading,
                 ),
                 
                 const SizedBox(height: 24),
@@ -263,17 +241,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         color: theme.colorScheme.onSurface.withOpacity(0.7),
                       ),
                     ),
-                    TextButton(
+                    AppTextButton(
+                      text: 'Sign In',
                       onPressed: _isLoading ? null : () {
                         context.go('/auth/login');
                       },
-                      child: Text(
-                        'Sign In',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
                     ),
                   ],
                 ),

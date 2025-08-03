@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
-import 'widgets/auth_text_field.dart';
+import '../../widgets/widgets.dart';
 
 /// Login screen with form validation and auth integration
 /// 
@@ -102,27 +102,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 48),
                 
                 // Email Field
-                AuthTextField(
+                AppTextField(
                   labelText: 'Email',
                   hintText: 'Enter your email address',
                   controller: _emailController,
                   isEmail: true,
                   textInputAction: TextInputAction.next,
                   enabled: !_isLoading,
-                  validator: AuthValidators.validateEmail,
+                  validator: FormValidators.validateEmail,
                 ),
                 
                 const SizedBox(height: 16),
                 
                 // Password Field
-                AuthTextField(
+                AppTextField(
                   labelText: 'Password',
                   hintText: 'Enter your password',
                   controller: _passwordController,
                   isPassword: true,
                   textInputAction: TextInputAction.done,
                   enabled: !_isLoading,
-                  validator: AuthValidators.validatePassword,
+                  validator: FormValidators.validatePassword,
                   onEditingComplete: _isLoading ? null : _handleLogin,
                 ),
                 
@@ -172,32 +172,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ],
                 
                 // Login Button
-                FilledButton(
-                  onPressed: _isLoading ? null : _handleLogin,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _isLoading
-                    ? SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            theme.colorScheme.onPrimary,
-                          ),
-                        ),
-                      )
-                    : Text(
-                        'Sign In',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: theme.colorScheme.onPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                PrimaryButton(
+                  text: 'Sign In',
+                  onPressed: _handleLogin,
+                  isLoading: _isLoading,
                 ),
                 
                 const SizedBox(height: 24),
@@ -212,17 +190,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         color: theme.colorScheme.onSurface.withOpacity(0.7),
                       ),
                     ),
-                    TextButton(
+                    AppTextButton(
+                      text: 'Sign Up',
                       onPressed: _isLoading ? null : () {
                         context.go('/auth/register');
                       },
-                      child: Text(
-                        'Sign Up',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
                     ),
                   ],
                 ),
