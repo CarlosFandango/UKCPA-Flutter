@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -11,6 +12,7 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 /// Auth State Notifier using real AuthRepository
 class AuthStateNotifier extends StateNotifier<AuthState> {
   final AuthRepository _authRepository;
+  Timer? _refreshTimer;
   
   AuthStateNotifier(this._authRepository) : super(const AuthState.initial()) {
     _checkAuthStatus();
@@ -21,12 +23,58 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       final user = await _authRepository.getCurrentUser();
       if (user != null) {
         state = AuthState.authenticated(user);
+        _startPeriodicRefresh();
       } else {
         state = const AuthState.unauthenticated();
+        _stopPeriodicRefresh();
       }
     } catch (e) {
       state = const AuthState.unauthenticated();
+      _stopPeriodicRefresh();
     }
+  }
+  
+  /// Start periodic user data refresh for authenticated users
+  void _startPeriodicRefresh() {
+    _stopPeriodicRefresh(); // Cancel any existing timer
+    
+    // Refresh user data every 30 minutes
+    _refreshTimer = Timer.periodic(const Duration(minutes: 30), (timer) {
+      if (state is AuthStateAuthenticated) {
+        _silentRefresh();
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+  
+  /// Stop periodic refresh timer
+  void _stopPeriodicRefresh() {
+    _refreshTimer?.cancel();
+    _refreshTimer = null;
+  }
+  
+  /// Silent refresh without affecting loading state
+  Future<void> _silentRefresh() async {
+    try {
+      final user = await _authRepository.getCurrentUser();
+      if (user != null && state is AuthStateAuthenticated) {
+        state = AuthState.authenticated(user);
+      } else if (user == null) {
+        // Session expired
+        state = const AuthState.unauthenticated();
+        _stopPeriodicRefresh();
+      }
+    } catch (e) {
+      // Don't change state on silent refresh failure
+      // User can continue with cached data
+    }
+  }
+  
+  @override
+  void dispose() {
+    _stopPeriodicRefresh();
+    super.dispose();
   }
   
   Future<AuthResult> login(String email, String password) async {
@@ -37,6 +85,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       
       if (response.isSuccess && response.user != null) {
         state = AuthState.authenticated(response.user!);
+        _startPeriodicRefresh();
         return AuthResult.success();
       } else {
         final errorMessage = response.errors?.first.message ?? 'Login failed';
@@ -68,6 +117,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       
       if (response.isSuccess && response.user != null) {
         state = AuthState.authenticated(response.user!);
+        _startPeriodicRefresh();
         return AuthResult.success();
       } else {
         final errorMessage = response.errors?.first.message ?? 'Registration failed';
@@ -82,6 +132,8 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   }
   
   Future<void> logout() async {
+    _stopPeriodicRefresh();
+    
     try {
       await _authRepository.logout();
       state = const AuthState.unauthenticated();
@@ -91,18 +143,40 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     }
   }
   
+  /// Manually refresh user data (with loading state)
   Future<void> refreshUser() async {
     if (state is AuthStateAuthenticated) {
+      state = const AuthState.loading();
+      
       try {
         final user = await _authRepository.getCurrentUser();
         if (user != null) {
           state = AuthState.authenticated(user);
         } else {
           state = const AuthState.unauthenticated();
+          _stopPeriodicRefresh();
         }
       } catch (e) {
         state = const AuthState.unauthenticated();
+        _stopPeriodicRefresh();
       }
+    }
+  }
+  
+  /// Check if session is still valid
+  Future<bool> isSessionValid() async {
+    try {
+      final user = await _authRepository.getCurrentUser();
+      return user != null;
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  /// Clear error state (useful for UI error dismissal)
+  void clearError() {
+    if (state is AuthStateError) {
+      state = const AuthState.unauthenticated();
     }
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -23,18 +24,52 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   /// Initialize the app and navigate to appropriate screen
   Future<void> _initializeApp() async {
-    // Wait for auth state to be determined
-    await Future.delayed(const Duration(seconds: 2));
+    // Wait minimum time for splash visibility
+    final splashDelay = Future.delayed(const Duration(seconds: 1));
+    
+    // Wait for auth state to be determined (initial check)
+    await Future.wait([
+      splashDelay,
+      _waitForAuthCheck(),
+    ]);
     
     if (mounted) {
-      final isAuthenticated = ref.read(isAuthenticatedProvider);
+      final authState = ref.read(authStateProvider);
       
-      if (isAuthenticated) {
+      // Navigate based on auth state
+      if (authState is AuthStateAuthenticated) {
         context.go('/home');
+      } else if (authState is AuthStateError) {
+        // Show error but allow navigation to login
+        context.go('/auth/login');
       } else {
         context.go('/auth/login');
       }
     }
+  }
+  
+  /// Wait for initial auth check to complete
+  Future<void> _waitForAuthCheck() async {
+    final completer = Completer<void>();
+    
+    // Listen for auth state changes
+    ref.listen(authStateProvider, (previous, next) {
+      // Complete when we move from initial/loading to a definitive state
+      if (next is! AuthStateInitial && next is! AuthStateLoading) {
+        if (!completer.isCompleted) {
+          completer.complete();
+        }
+      }
+    });
+    
+    // Timeout after 10 seconds
+    Timer(const Duration(seconds: 10), () {
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
+    });
+    
+    await completer.future;
   }
 
   @override

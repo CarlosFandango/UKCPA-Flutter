@@ -13,23 +13,48 @@ import '../screens/account/account_screen.dart';
 import '../screens/account/orders_screen.dart';
 import 'auth_provider.dart';
 
+/// Router provider with auth-aware navigation
 final routerProvider = Provider<GoRouter>((ref) {
-  final isAuthenticated = ref.watch(isAuthenticatedProvider);
-  
   return GoRouter(
     initialLocation: '/',
     debugLogDiagnostics: true,
+    refreshListenable: RouterRefreshNotifier(ref),
     redirect: (context, state) {
+      final authState = ref.read(authStateProvider);
+      final isAuthenticated = authState is AuthStateAuthenticated;
+      final isAuthLoading = authState is AuthStateLoading || authState is AuthStateInitial;
       final isAuthRoute = state.matchedLocation.startsWith('/auth');
+      final location = state.matchedLocation;
+      
+      // Don't redirect during initial auth check or loading
+      if (isAuthLoading && location == '/') {
+        return null; // Stay on splash
+      }
       
       // Redirect to login if not authenticated and trying to access protected routes
-      if (!isAuthenticated && _isProtectedRoute(state.matchedLocation)) {
-        return '/auth/login?redirect=${state.matchedLocation}';
+      if (!isAuthenticated && !isAuthLoading && _isProtectedRoute(location)) {
+        return '/auth/login?redirect=${Uri.encodeComponent(location)}';
       }
       
       // Redirect to home if authenticated and trying to access auth routes
       if (isAuthenticated && isAuthRoute) {
+        final redirectParam = state.uri.queryParameters['redirect'];
+        if (redirectParam != null && redirectParam.isNotEmpty) {
+          try {
+            final decodedRedirect = Uri.decodeComponent(redirectParam);
+            if (_isValidRedirect(decodedRedirect)) {
+              return decodedRedirect;
+            }
+          } catch (e) {
+            // Invalid redirect, fall back to home
+          }
+        }
         return '/home';
+      }
+      
+      // Redirect from splash to appropriate screen after auth check
+      if (location == '/' && !isAuthLoading) {
+        return isAuthenticated ? '/home' : '/auth/login';
       }
       
       return null;
@@ -114,13 +139,56 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
+/// Router refresh notifier to listen to auth state changes
+class RouterRefreshNotifier extends ChangeNotifier {
+  final Ref _ref;
+  
+  RouterRefreshNotifier(this._ref) {
+    _ref.listen(authStateProvider, (previous, next) {
+      // Notify router when auth state changes
+      if (previous.runtimeType != next.runtimeType) {
+        notifyListeners();
+      }
+    });
+  }
+}
+
+/// Check if a route requires authentication
 bool _isProtectedRoute(String route) {
   const protectedRoutes = [
     '/checkout',
     '/account',
+    '/courses', // Course browsing requires auth for full features
   ];
   
+  // Root and auth routes are not protected
+  const publicRoutes = [
+    '/',
+    '/auth',
+    '/basket', // Basket can be used by guests
+  ];
+  
+  // Check if route is explicitly public
+  if (publicRoutes.any((r) => route.startsWith(r))) {
+    return false;
+  }
+  
+  // Check if route is explicitly protected
   return protectedRoutes.any((r) => route.startsWith(r));
+}
+
+/// Validate redirect URLs to prevent open redirect attacks
+bool _isValidRedirect(String redirect) {
+  // Only allow internal app routes
+  const validPrefixes = [
+    '/home',
+    '/courses',
+    '/basket',
+    '/checkout',
+    '/account',
+  ];
+  
+  return validPrefixes.any((prefix) => redirect.startsWith(prefix));
 }
 
 // Navigation helpers
