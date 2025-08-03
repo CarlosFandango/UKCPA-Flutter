@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
+// import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'core/constants/app_constants.dart';
@@ -20,9 +20,9 @@ Future<void> main() async {
   // Initialize GraphQL cache
   await initHiveForFlutter();
   
-  // Configure Stripe
-  Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? '';
-  await Stripe.instance.applySettings();
+  // Configure Stripe (temporarily disabled for iOS setup)
+  // Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? '';
+  // await Stripe.instance.applySettings();
   
   runApp(
     const ProviderScope(
