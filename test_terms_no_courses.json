@@ -1,0 +1,8 @@
+{
+  "query": "query GetTerms($data: TermInput!) { getTerms(data: $data) { terms { id name courseGroups { id name } } } }",
+  "variables": {
+    "data": {
+      "displayStatus": "LIVE"
+    }
+  }
+}

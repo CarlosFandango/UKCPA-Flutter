@@ -1,0 +1,6 @@
+{
+  "query": "query GetCourses($data: CourseSearchInput!) { getCourses(data: $data) { courses { __typename ... on StudioCourse { id name description price } ... on OnlineCourse { id name description price } } } }",
+  "variables": {
+    "data": {}
+  }
+}

@@ -4,151 +4,91 @@ import 'course.dart';
 part 'course_group.freezed.dart';
 part 'course_group.g.dart';
 
-/// A group of related courses, typically representing a program or curriculum
+/// A group of related courses, representing what users browse and select
+/// Based exactly on CourseGroupFragment from the website GraphQL schema
 @freezed
 class CourseGroup with _$CourseGroup {
   const factory CourseGroup({
-    required String id,
+    required int id,
     required String name,
-    String? description,
-    String? shortDescription,
-    String? subtitle,
-    String? image,
     String? thumbImage,
+    String? image,
     ImagePosition? imagePosition,
-    int? order,
-    @Default(true) bool active,
-    DisplayStatus? displayStatus,
-    DanceType? danceType,
-    Level? level,
-    @Default([]) List<AttendanceType> attendanceTypes,
-    int? ageFrom,
-    int? ageTo,
-    
-    // Course relationships
+    String? shortDescription,
+    String? description,
+    int? minOriginalPrice,
+    int? maxOriginalPrice,
+    int? minPrice,
+    int? maxPrice,
+    @Default([]) List<String> attendanceTypes,
+    @Default([]) List<String> locations,
+    String? danceType,
+    @Default([]) List<String> courseTypes,
     @Default([]) List<Course> courses,
-    int? totalCourses,
-    int? availableCourses,
-    
-    // Pricing information
-    int? totalPrice,
-    int? discountedPrice,
-    int? bundleDiscount,
-    
-    // Scheduling
-    DateTime? startDate,
-    DateTime? endDate,
-    int? durationWeeks,
-    
-    // Prerequisites and progression
-    List<String>? prerequisites,
-    List<String>? progression,
-    String? skillsLearned,
-    
-    // Metadata
-    DateTime? createdAt,
-    DateTime? updatedAt,
-    String? category,
-    List<String>? tags,
   }) = _CourseGroup;
 
   factory CourseGroup.fromJson(Map<String, dynamic> json) =>
       _$CourseGroupFromJson(json);
 }
 
+/// Image position for course group images
+@freezed
+class ImagePosition with _$ImagePosition {
+  const factory ImagePosition({
+    required double X,
+    required double Y,
+  }) = _ImagePosition;
+
+  factory ImagePosition.fromJson(Map<String, dynamic> json) =>
+      _$ImagePositionFromJson(json);
+}
+
 /// Extension methods for course group utilities
 extension CourseGroupExtensions on CourseGroup {
   /// Check if the course group is available for booking
   bool get isAvailable {
-    return active && 
-           displayStatus == DisplayStatus.published &&
-           courses.any((course) => course.isAvailable);
+    return courses.any((course) => course.isAvailable);
   }
 
-  /// Get the lowest price from all courses in the group
-  int? get minPrice {
-    if (courses.isEmpty) return null;
-    
-    final prices = courses
-        .where((course) => course.isAvailable)
-        .map((course) => course.effectivePrice)
-        .where((price) => price > 0);
-    
-    return prices.isEmpty ? null : prices.reduce((a, b) => a < b ? a : b);
-  }
-
-  /// Get the highest price from all courses in the group
-  int? get maxPrice {
-    if (courses.isEmpty) return null;
-    
-    final prices = courses
-        .where((course) => course.isAvailable)
-        .map((course) => course.effectivePrice)
-        .where((price) => price > 0);
-    
-    return prices.isEmpty ? null : prices.reduce((a, b) => a > b ? a : b);
-  }
-
-  /// Get price range display text
+  /// Get price range display text using the provided price fields
   String? get priceRangeDisplay {
     final min = minPrice;
     final max = maxPrice;
     
     if (min == null && max == null) return null;
-    if (min == max) return '£$min';
-    return '£$min - £$max';
+    if (min == max) return '£${(min! / 100).toStringAsFixed(2)}';
+    return '£${(min! / 100).toStringAsFixed(2)} - £${(max! / 100).toStringAsFixed(2)}';
   }
 
-  /// Get courses available for a specific age group
-  List<Course> coursesForAge(int age) {
-    return courses.where((course) {
-      if (course.ageFrom != null && age < course.ageFrom!) return false;
-      if (course.ageTo != null && age > course.ageTo!) return false;
-      return true;
-    }).toList();
+  /// Get original price range display text
+  String? get originalPriceRangeDisplay {
+    final min = minOriginalPrice;
+    final max = maxOriginalPrice;
+    
+    if (min == null && max == null) return null;
+    if (min == max) return '£${(min! / 100).toStringAsFixed(2)}';
+    return '£${(min! / 100).toStringAsFixed(2)} - £${(max! / 100).toStringAsFixed(2)}';
   }
 
-  /// Get courses for children
+  /// Check if the group has discounted prices
+  bool get hasDiscounts {
+    return (minPrice != null && minOriginalPrice != null && minPrice! < minOriginalPrice!) ||
+           (maxPrice != null && maxOriginalPrice != null && maxPrice! < maxOriginalPrice!);
+  }
+
+  /// Get courses for children based on attendance types
   List<Course> get coursesForChildren {
     return courses.where((course) => course.isForChildren).toList();
   }
 
-  /// Get courses for adults
+  /// Get courses for adults based on attendance types
   List<Course> get coursesForAdults {
     return courses.where((course) => course.isForAdults).toList();
   }
 
-  /// Get courses by level
-  List<Course> coursesForLevel(Level level) {
-    return courses.where((course) => course.level == level).toList();
-  }
-
-  /// Get courses by dance type
-  List<Course> coursesForDanceType(DanceType danceType) {
-    return courses.where((course) => course.danceType == danceType).toList();
-  }
-
-  /// Get available course levels
-  Set<Level> get availableLevels {
-    return courses
-        .where((course) => course.level != null)
-        .map((course) => course.level!)
-        .toSet();
-  }
-
-  /// Get available dance types
-  Set<DanceType> get availableDanceTypes {
-    return courses
-        .where((course) => course.danceType != null)
-        .map((course) => course.danceType!)
-        .toSet();
-  }
-
-  /// Check if the group offers courses for families
+  /// Check if the group offers courses for both children and adults
   bool get isFamilyFriendly {
-    return attendanceTypes.contains(AttendanceType.families) ||
-           courses.any((course) => 
-               course.attendanceTypes.contains(AttendanceType.families));
+    return attendanceTypes.contains('children') && attendanceTypes.contains('adults');
   }
 
   /// Get the number of available courses
@@ -192,21 +132,43 @@ extension CourseGroupExtensions on CourseGroup {
     return endDates.last;
   }
 
-  /// Get total duration in weeks for the entire group
-  int? get totalDurationWeeks {
-    final earliest = earliestStartDate;
-    final latest = latestEndDate;
-    
-    if (earliest != null && latest != null) {
-      return latest.difference(earliest).inDays ~/ 7;
-    }
-    
-    return durationWeeks;
-  }
-
   /// Check if registration is open
   bool get isRegistrationOpen {
     return isAvailable && hasUpcomingCourses;
+  }
+
+  /// Check if the group has online courses
+  bool get hasOnlineCourses {
+    return courseTypes.contains('OnlineCourse');
+  }
+
+  /// Check if the group has studio courses
+  bool get hasStudioCourses {
+    return courseTypes.contains('StudioCourse');
+  }
+
+  /// Check if the group has mixed course types
+  bool get hasMixedCourseTypes {
+    return hasOnlineCourses && hasStudioCourses;
+  }
+
+  /// Get location display text
+  String? get locationDisplay {
+    if (locations.isEmpty) return null;
+    if (locations.length == 1) return locations.first;
+    return '${locations.length} locations';
+  }
+
+  /// Get course type display text
+  String? get courseTypeDisplay {
+    if (hasMixedCourseTypes) {
+      return 'Online & Studio';
+    } else if (hasOnlineCourses) {
+      return 'Online';
+    } else if (hasStudioCourses) {
+      return 'Studio';
+    }
+    return null;
   }
 
   /// Get summary statistics
@@ -219,50 +181,21 @@ extension CourseGroupExtensions on CourseGroup {
       'completedCourses': courses.where((c) => c.hasEnded).length,
       'minPrice': minPrice,
       'maxPrice': maxPrice,
-      'averagePrice': courses.isEmpty ? null : 
-          courses.map((c) => c.effectivePrice).reduce((a, b) => a + b) / courses.length,
-      'totalDuration': totalDurationWeeks,
-      'levels': availableLevels.length,
-      'danceTypes': availableDanceTypes.length,
+      'hasDiscounts': hasDiscounts,
+      'attendanceTypes': attendanceTypes.length,
+      'locations': locations.length,
+      'courseTypes': courseTypes.length,
     };
   }
 
-  /// Get age range description for the group
-  String? get ageRangeDescription {
-    if (ageFrom != null && ageTo != null) {
-      return '$ageFrom-$ageTo years';
-    }
+  /// Search within the course group's courses
+  List<Course> searchCourses(String query) {
+    if (query.trim().isEmpty) return courses;
     
-    // Calculate from courses if not set at group level
-    final ages = <int>[];
-    for (final course in courses) {
-      if (course.ageFrom != null) ages.add(course.ageFrom!);
-      if (course.ageTo != null) ages.add(course.ageTo!);
-    }
-    
-    if (ages.isEmpty) return null;
-    
-    ages.sort();
-    final minAge = ages.first;
-    final maxAge = ages.last;
-    
-    if (minAge == maxAge) return '$minAge years';
-    return '$minAge-$maxAge years';
-  }
-
-  /// Check if the group is suitable for a specific age
-  bool isSuitableForAge(int age) {
-    // Check group-level age restrictions first
-    if (ageFrom != null && age < ageFrom!) return false;
-    if (ageTo != null && age > ageTo!) return false;
-    
-    // If no group-level restrictions, check if any course is suitable
-    if (ageFrom == null && ageTo == null) {
-      return courses.any((course) => 
-          (course.ageFrom == null || age >= course.ageFrom!) &&
-          (course.ageTo == null || age <= course.ageTo!));
-    }
-    
-    return true;
+    final lowerQuery = query.toLowerCase().trim();
+    return courses.where((course) {
+      return course.name.toLowerCase().contains(lowerQuery) ||
+             course.subtitle?.toLowerCase().contains(lowerQuery) == true;
+    }).toList();
   }
 }

@@ -1,421 +1,238 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ukcpa_flutter/domain/entities/course.dart';
 import 'package:ukcpa_flutter/domain/entities/course_group.dart';
+import 'package:ukcpa_flutter/domain/entities/course.dart';
 
 void main() {
-  group('CourseGroup Entity Tests', () {
-    test('should create a basic course group with required fields', () {
-      final group = CourseGroup(
-        id: 'group1',
-        name: 'Ballet Fundamentals',
-      );
+  group('CourseGroup Entity', () {
+    late CourseGroup testCourseGroup;
+    late Course testCourse;
 
-      expect(group.id, equals('group1'));
-      expect(group.name, equals('Ballet Fundamentals'));
-      expect(group.active, isTrue);
-      expect(group.courses, isEmpty);
-      expect(group.attendanceTypes, isEmpty);
-    });
-
-    test('should create a course group with all optional fields', () {
-      final imagePosition = ImagePosition(x: 0.5, y: 0.3);
-      
-      final group = CourseGroup(
-        id: 'group1',
-        name: 'Advanced Ballet Program',
-        description: 'Complete ballet training program',
-        shortDescription: 'Advanced ballet',
-        subtitle: 'Master the art of ballet',
-        image: 'group-image.jpg',
-        thumbImage: 'group-thumb.jpg',
-        imagePosition: imagePosition,
-        order: 1,
+    setUp(() {
+      testCourse = Course(
+        id: '1',
+        name: 'Ballet Basics Session 1',
+        price: 2500, // £25.00 in pence
         active: true,
         displayStatus: DisplayStatus.published,
-        danceType: DanceType.ballet,
-        level: Level.advanced,
         attendanceTypes: [AttendanceType.adults],
-        ageFrom: 16,
-        ageTo: 65,
-        totalCourses: 5,
-        availableCourses: 3,
-        totalPrice: 500,
-        discountedPrice: 450,
-        bundleDiscount: 50,
-        startDate: DateTime(2024, 6, 1),
-        endDate: DateTime(2024, 12, 31),
-        durationWeeks: 26,
-        prerequisites: ['Basic ballet knowledge'],
-        progression: ['Intermediate Ballet', 'Advanced Choreography'],
-        skillsLearned: 'Advanced ballet technique, choreography',
-        category: 'Dance Training',
-        tags: ['ballet', 'advanced', 'technique'],
       );
-
-      expect(group.description, equals('Complete ballet training program'));
-      expect(group.danceType, equals(DanceType.ballet));
-      expect(group.level, equals(Level.advanced));
-      expect(group.totalPrice, equals(500));
-      expect(group.bundleDiscount, equals(50));
-      expect(group.durationWeeks, equals(26));
-      expect(group.prerequisites?.first, equals('Basic ballet knowledge'));
-      expect(group.tags?.length, equals(3));
+      
+      testCourseGroup = CourseGroup(
+        id: 1,
+        name: 'Ballet Basics',
+        shortDescription: 'Introduction to ballet fundamentals',
+        minPrice: 2000, // £20.00 in pence
+        maxPrice: 3000, // £30.00 in pence
+        minOriginalPrice: 2500, // £25.00 in pence
+        maxOriginalPrice: 3500, // £35.00 in pence
+        attendanceTypes: ['adults'],
+        locations: ['studio1'],
+        courseTypes: ['StudioCourse'],
+        courses: [testCourse],
+      );
     });
 
-    test('should serialize to and from JSON correctly', () {
-      final group = CourseGroup(
-        id: 'group1',
-        name: 'Hip Hop Collection',
-        danceType: DanceType.hiphop,
-        level: Level.beginner,
-        totalPrice: 300,
-        durationWeeks: 12,
+    test('should create course group with required fields', () {
+      const courseGroup = CourseGroup(
+        id: 1,
+        name: 'Ballet Basics',
       );
 
-      final json = group.toJson();
-      final recreatedGroup = CourseGroup.fromJson(json);
-
-      expect(recreatedGroup.id, equals(group.id));
-      expect(recreatedGroup.name, equals(group.name));
-      expect(recreatedGroup.danceType, equals(group.danceType));
-      expect(recreatedGroup.level, equals(group.level));
-      expect(recreatedGroup.totalPrice, equals(group.totalPrice));
-      expect(recreatedGroup.durationWeeks, equals(group.durationWeeks));
+      expect(courseGroup.id, equals(1));
+      expect(courseGroup.name, equals('Ballet Basics'));
+      expect(courseGroup.attendanceTypes, isEmpty);
+      expect(courseGroup.locations, isEmpty);
+      expect(courseGroup.courseTypes, isEmpty);
+      expect(courseGroup.courses, isEmpty);
     });
 
-    group('CourseGroup Extensions', () {
-      late List<Course> testCourses;
+    test('should create course group with all fields', () {
+      expect(testCourseGroup.id, equals(1));
+      expect(testCourseGroup.name, equals('Ballet Basics'));
+      expect(testCourseGroup.shortDescription, equals('Introduction to ballet fundamentals'));
+      expect(testCourseGroup.minPrice, equals(2000));
+      expect(testCourseGroup.maxPrice, equals(3000));
+      expect(testCourseGroup.courses, hasLength(1));
+    });
 
-      setUp(() {
-        testCourses = [
-          Course(
-            id: '1',
-            name: 'Beginner Ballet',
-            price: 120,
-            level: Level.beginner,
-            danceType: DanceType.ballet,
-            ageFrom: 16,
-            ageTo: 65,
-            active: true,
-            displayStatus: DisplayStatus.published,
-            attendanceTypes: [AttendanceType.adults],
-            startDateTime: DateTime.now().add(const Duration(days: 30)),
-            endDateTime: DateTime.now().add(const Duration(days: 120)),
-          ),
-          Course(
-            id: '2',
-            name: 'Kids Ballet',
-            price: 80,
-            level: Level.kidsFoundation,
-            danceType: DanceType.ballet,
-            ageFrom: 5,
-            ageTo: 12,
-            active: true,
-            displayStatus: DisplayStatus.published,
-            attendanceTypes: [AttendanceType.children],
-            startDateTime: DateTime.now().add(const Duration(days: 45)),
-            endDateTime: DateTime.now().add(const Duration(days: 135)),
-          ),
-          Course(
-            id: '3',
-            name: 'Advanced Ballet',
-            price: 200,
-            level: Level.advanced,
-            danceType: DanceType.ballet,
-            ageFrom: 18,
-            ageTo: 65,
-            active: false, // Inactive course
-            displayStatus: DisplayStatus.draft,
-            attendanceTypes: [AttendanceType.adults],
-          ),
-          Course(
-            id: '4',
-            name: 'Family Ballet',
-            price: 150,
-            level: Level.beginner,
-            danceType: DanceType.ballet,
-            ageFrom: 5,
-            ageTo: 65,
-            active: true,
-            displayStatus: DisplayStatus.published,
-            attendanceTypes: [AttendanceType.families],
-            fullyBooked: true, // Full course
-          ),
-        ];
-      });
+    test('isAvailable should return true when courses are available', () {
+      expect(testCourseGroup.isAvailable, isTrue);
+    });
 
-      test('isAvailable should return true when group has available courses', () {
-        final group = CourseGroup(
-          id: 'group1',
-          name: 'Ballet Group',
-          active: true,
-          displayStatus: DisplayStatus.published,
-          courses: testCourses,
-        );
+    test('priceRangeDisplay should format prices correctly', () {
+      const singlePriceCourseGroup = CourseGroup(
+        id: 1,
+        name: 'Test',
+        minPrice: 2500,
+        maxPrice: 2500,
+      );
+      
+      expect(testCourseGroup.priceRangeDisplay, equals('£20.00 - £30.00'));
+      expect(singlePriceCourseGroup.priceRangeDisplay, equals('£25.00'));
+    });
 
-        expect(group.isAvailable, isTrue);
-      });
+    test('originalPriceRangeDisplay should format original prices correctly', () {
+      expect(testCourseGroup.originalPriceRangeDisplay, equals('£25.00 - £35.00'));
+    });
 
-      test('isAvailable should return false when group is inactive', () {
-        final group = CourseGroup(
-          id: 'group1',
-          name: 'Ballet Group',
-          active: false,
-          displayStatus: DisplayStatus.published,
-          courses: testCourses,
-        );
+    test('hasDiscounts should return true when prices are discounted', () {
+      expect(testCourseGroup.hasDiscounts, isTrue);
+    });
 
-        expect(group.isAvailable, isFalse);
-      });
+    test('availableCoursesCount should count available courses', () {
+      expect(testCourseGroup.availableCoursesCount, equals(1));
+    });
 
-      test('minPrice and maxPrice should calculate correctly', () {
-        final group = CourseGroup(
-          id: 'group1',
-          name: 'Ballet Group',
-          courses: testCourses,
-        );
+    test('hasStudioCourses should return true for studio course types', () {
+      expect(testCourseGroup.hasStudioCourses, isTrue);
+      expect(testCourseGroup.hasOnlineCourses, isFalse);
+    });
 
-        expect(group.minPrice, equals(80)); // Kids Ballet
-        expect(group.maxPrice, equals(120)); // Beginner Ballet (Advanced is inactive, Family is full)
-      });
+    test('locationDisplay should format location text correctly', () {
+      expect(testCourseGroup.locationDisplay, equals('studio1'));
+      
+      const multiLocationGroup = CourseGroup(
+        id: 1,
+        name: 'Test',
+        locations: ['studio1', 'studio2', 'external'],
+      );
+      expect(multiLocationGroup.locationDisplay, equals('3 locations'));
+    });
 
-      test('priceRangeDisplay should format correctly', () {
-        final group1 = CourseGroup(
-          id: 'group1',
-          name: 'Ballet Group',
-          courses: testCourses,
-        );
+    test('courseTypeDisplay should format course type text correctly', () {
+      expect(testCourseGroup.courseTypeDisplay, equals('Studio'));
+      
+      const onlineGroup = CourseGroup(
+        id: 1,
+        name: 'Test',
+        courseTypes: ['OnlineCourse'],
+      );
+      expect(onlineGroup.courseTypeDisplay, equals('Online'));
+      
+      const mixedGroup = CourseGroup(
+        id: 1,
+        name: 'Test',
+        courseTypes: ['StudioCourse', 'OnlineCourse'],
+      );
+      expect(mixedGroup.courseTypeDisplay, equals('Online & Studio'));
+    });
 
-        final group2 = CourseGroup(
-          id: 'group2',
-          name: 'Single Price Group',
-          courses: [testCourses[0]], // Only Beginner Ballet
-        );
+    test('should serialize to/from JSON', () {
+      const simpleCourseGroup = CourseGroup(
+        id: 1,
+        name: 'Ballet Basics',
+        shortDescription: 'Introduction to ballet',
+      );
 
-        expect(group1.priceRangeDisplay, equals('£80 - £120'));
-        expect(group2.priceRangeDisplay, equals('£120'));
-      });
+      final json = simpleCourseGroup.toJson();
+      final deserializedCourseGroup = CourseGroup.fromJson(json);
 
-      test('coursesForAge should filter correctly', () {
-        final group = CourseGroup(
-          id: 'group1',
-          name: 'Ballet Group',
-          courses: testCourses,
-        );
+      expect(deserializedCourseGroup.id, equals(simpleCourseGroup.id));
+      expect(deserializedCourseGroup.name, equals(simpleCourseGroup.name));
+      expect(deserializedCourseGroup.shortDescription, equals(simpleCourseGroup.shortDescription));
+    });
 
-        final coursesFor10YearOld = group.coursesForAge(10);
-        final coursesFor25YearOld = group.coursesForAge(25);
+    test('coursesForChildren should return courses for children', () {
+      final childCourse = Course(
+        id: '2',
+        name: 'Kids Ballet',
+        price: 1500,
+        active: true,
+        displayStatus: DisplayStatus.published,
+        attendanceTypes: [AttendanceType.children],
+      );
 
-        expect(coursesFor10YearOld.length, equals(2)); // Kids Ballet and Family Ballet
-        expect(coursesFor25YearOld.length, equals(2)); // Beginner Ballet and Family Ballet
-      });
+      final groupWithKids = CourseGroup(
+        id: 1,
+        name: 'Mixed Ballet',
+        courses: [testCourse, childCourse],
+      );
 
-      test('coursesForChildren should return children and family courses', () {
-        final group = CourseGroup(
-          id: 'group1',
-          name: 'Ballet Group',
-          courses: testCourses,
-        );
+      final childrenCourses = groupWithKids.coursesForChildren;
+      expect(childrenCourses, hasLength(1));
+      expect(childrenCourses.first.name, equals('Kids Ballet'));
+    });
 
-        final childrenCourses = group.coursesForChildren;
-        expect(childrenCourses.length, equals(2)); // Kids Ballet and Family Ballet
-        expect(childrenCourses.any((c) => c.name == 'Kids Ballet'), isTrue);
-        expect(childrenCourses.any((c) => c.name == 'Family Ballet'), isTrue);
-      });
+    test('coursesForAdults should return courses for adults', () {
+      final adultCourses = testCourseGroup.coursesForAdults;
+      expect(adultCourses, hasLength(1));
+      expect(adultCourses.first.name, equals('Ballet Basics Session 1'));
+    });
 
-      test('coursesForAdults should return adult and family courses', () {
-        final group = CourseGroup(
-          id: 'group1',
-          name: 'Ballet Group',
-          courses: testCourses,
-        );
+    test('isFamilyFriendly should return true when both children and adults attendance types exist', () {
+      const familyGroup = CourseGroup(
+        id: 1,
+        name: 'Family Ballet',
+        attendanceTypes: ['children', 'adults'],
+      );
+      
+      expect(familyGroup.isFamilyFriendly, isTrue);
+      expect(testCourseGroup.isFamilyFriendly, isFalse); // Only adults
+    });
 
-        final adultCourses = group.coursesForAdults;
-        expect(adultCourses.length, equals(3)); // All except Kids Ballet
-        expect(adultCourses.any((c) => c.name == 'Beginner Ballet'), isTrue);
-        expect(adultCourses.any((c) => c.name == 'Family Ballet'), isTrue);
-      });
+    test('statistics should return comprehensive data', () {
+      final stats = testCourseGroup.statistics;
+      
+      expect(stats['totalCourses'], equals(1));
+      expect(stats['availableCourses'], equals(1));
+      expect(stats['minPrice'], equals(2000));
+      expect(stats['maxPrice'], equals(3000));
+      expect(stats['hasDiscounts'], isTrue);
+      expect(stats['attendanceTypes'], equals(1));
+      expect(stats['locations'], equals(1));
+      expect(stats['courseTypes'], equals(1));
+    });
 
-      test('coursesForLevel should filter by level', () {
-        final group = CourseGroup(
-          id: 'group1',
-          name: 'Ballet Group',
-          courses: testCourses,
-        );
+    test('searchCourses should filter courses by query', () {
+      final course2 = Course(
+        id: '2',
+        name: 'Advanced Ballet',
+        price: 3500,
+        active: true,
+        displayStatus: DisplayStatus.published,
+        attendanceTypes: [AttendanceType.adults],
+      );
 
-        final beginnerCourses = group.coursesForLevel(Level.beginner);
-        final kidsCourses = group.coursesForLevel(Level.kidsFoundation);
+      final groupWithMultipleCourses = CourseGroup(
+        id: 1,
+        name: 'Ballet Courses',
+        courses: [testCourse, course2],
+      );
 
-        expect(beginnerCourses.length, equals(2)); // Beginner Ballet and Family Ballet
-        expect(kidsCourses.length, equals(1)); // Kids Ballet
-      });
+      final basicsCourses = groupWithMultipleCourses.searchCourses('Basics');
+      final advancedCourses = groupWithMultipleCourses.searchCourses('Advanced');
+      final allCourses = groupWithMultipleCourses.searchCourses('');
 
-      test('coursesForDanceType should filter by dance type', () {
-        final mixedCourses = [
-          ...testCourses,
-          Course(
-            id: '5',
-            name: 'Hip Hop Basics',
-            price: 100,
-            danceType: DanceType.hiphop,
-            active: true,
-            displayStatus: DisplayStatus.published,
-          ),
-        ];
+      expect(basicsCourses, hasLength(1));
+      expect(basicsCourses.first.name, contains('Basics'));
+      expect(advancedCourses, hasLength(1));
+      expect(advancedCourses.first.name, contains('Advanced'));
+      expect(allCourses, hasLength(2));
+    });
+  });
 
-        final group = CourseGroup(
-          id: 'group1',
-          name: 'Mixed Group',
-          courses: mixedCourses,
-        );
+  group('ImagePosition Entity', () {
+    test('should create image position with required fields', () {
+      const imagePosition = ImagePosition(
+        X: 50.0,
+        Y: 25.0,
+      );
 
-        final balletCourses = group.coursesForDanceType(DanceType.ballet);
-        final hiphopCourses = group.coursesForDanceType(DanceType.hiphop);
+      expect(imagePosition.X, equals(50.0));
+      expect(imagePosition.Y, equals(25.0));
+    });
 
-        expect(balletCourses.length, equals(4)); // All original test courses
-        expect(hiphopCourses.length, equals(1)); // Just Hip Hop Basics
-      });
+    test('should serialize to/from JSON', () {
+      const imagePosition = ImagePosition(
+        X: 50.0,
+        Y: 25.0,
+      );
 
-      test('availableLevels should return unique levels', () {
-        final group = CourseGroup(
-          id: 'group1',
-          name: 'Ballet Group',
-          courses: testCourses,
-        );
+      final json = imagePosition.toJson();
+      final deserializedImagePosition = ImagePosition.fromJson(json);
 
-        final levels = group.availableLevels;
-        expect(levels.length, equals(3));
-        expect(levels.contains(Level.beginner), isTrue);
-        expect(levels.contains(Level.kidsFoundation), isTrue);
-        expect(levels.contains(Level.advanced), isTrue);
-      });
-
-      test('availableDanceTypes should return unique dance types', () {
-        final group = CourseGroup(
-          id: 'group1',
-          name: 'Ballet Group',
-          courses: testCourses,
-        );
-
-        final danceTypes = group.availableDanceTypes;
-        expect(danceTypes.length, equals(1));
-        expect(danceTypes.contains(DanceType.ballet), isTrue);
-      });
-
-      test('isFamilyFriendly should return true for family attendance types', () {
-        final group = CourseGroup(
-          id: 'group1',
-          name: 'Ballet Group',
-          courses: testCourses,
-        );
-
-        expect(group.isFamilyFriendly, isTrue); // Family Ballet has family attendance
-      });
-
-      test('availableCoursesCount should count only available courses', () {
-        final group = CourseGroup(
-          id: 'group1',
-          name: 'Ballet Group',
-          courses: testCourses,
-        );
-
-        expect(group.availableCoursesCount, equals(2)); // Only Beginner and Kids Ballet
-      });
-
-      test('hasUpcomingCourses should return true for courses not started', () {
-        final group = CourseGroup(
-          id: 'group1',
-          name: 'Ballet Group',
-          courses: testCourses,
-        );
-
-        expect(group.hasUpcomingCourses, isTrue);
-      });
-
-      test('earliestStartDate should return the earliest start date', () {
-        final group = CourseGroup(
-          id: 'group1',
-          name: 'Ballet Group',
-          courses: testCourses,
-        );
-
-        final earliest = group.earliestStartDate;
-        expect(earliest, isNotNull);
-        // Should be the start date of Beginner Ballet (30 days from now)
-        expect(earliest!.isAfter(DateTime.now().add(const Duration(days: 29))), isTrue);
-      });
-
-      test('latestEndDate should return the latest end date', () {
-        final group = CourseGroup(
-          id: 'group1',
-          name: 'Ballet Group',
-          courses: testCourses,
-        );
-
-        final latest = group.latestEndDate;
-        expect(latest, isNotNull);
-        // Should be the end date of Kids Ballet (135 days from now)
-        expect(latest!.isAfter(DateTime.now().add(const Duration(days: 130))), isTrue);
-      });
-
-      test('totalDurationWeeks should calculate correctly', () {
-        final group = CourseGroup(
-          id: 'group1',
-          name: 'Ballet Group',
-          courses: testCourses,
-        );
-
-        final duration = group.totalDurationWeeks;
-        expect(duration, greaterThan(10)); // Should be around 15 weeks
-      });
-
-      test('ageRangeDescription should format correctly', () {
-        final group1 = CourseGroup(
-          id: 'group1',
-          name: 'Ballet Group',
-          ageFrom: 16,
-          ageTo: 65,
-        );
-
-        final group2 = CourseGroup(
-          id: 'group2',
-          name: 'Mixed Ages',
-          courses: testCourses,
-        );
-
-        expect(group1.ageRangeDescription, equals('16-65 years'));
-        expect(group2.ageRangeDescription, equals('5-65 years')); // Calculated from courses
-      });
-
-      test('isSuitableForAge should check age restrictions', () {
-        final group = CourseGroup(
-          id: 'group1',
-          name: 'Adult Ballet',
-          ageFrom: 18,
-          ageTo: 65,
-        );
-
-        expect(group.isSuitableForAge(25), isTrue);
-        expect(group.isSuitableForAge(16), isFalse);
-        expect(group.isSuitableForAge(70), isFalse);
-      });
-
-      test('statistics should return comprehensive data', () {
-        final group = CourseGroup(
-          id: 'group1',
-          name: 'Ballet Group',
-          courses: testCourses,
-        );
-
-        final stats = group.statistics;
-        
-        expect(stats['totalCourses'], equals(4));
-        expect(stats['availableCourses'], equals(2));
-        expect(stats['minPrice'], equals(80));
-        expect(stats['maxPrice'], equals(120));
-        expect(stats['levels'], equals(3));
-        expect(stats['danceTypes'], equals(1));
-      });
+      expect(deserializedImagePosition.X, equals(imagePosition.X));
+      expect(deserializedImagePosition.Y, equals(imagePosition.Y));
     });
   });
 }

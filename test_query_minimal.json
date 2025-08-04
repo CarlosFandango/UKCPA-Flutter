@@ -1,0 +1,8 @@
+{
+  "query": "query GetTerms($data: TermInput!) { getTerms(data: $data) { terms { id name courseGroups { id name courses { __typename ... on StudioCourse { id name description price } ... on OnlineCourse { id name description price } } } } } }",
+  "variables": {
+    "data": {
+      "displayStatus": "LIVE"
+    }
+  }
+}

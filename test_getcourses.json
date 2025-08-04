@@ -1,0 +1,4 @@
+{
+  "query": "query GetCourses { getCourses { courses { __typename ... on StudioCourse { id name description price } ... on OnlineCourse { id name description price } } } }",
+  "variables": {}
+}

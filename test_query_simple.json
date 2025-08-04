@@ -1,0 +1,8 @@
+{
+  "query": "query GetTerms($data: TermInput!) { getTerms(data: $data) { terms { id name courseGroups { id name courses { __typename ... on StudioCourse { id name description subtitle price originalPrice currentPrice depositPrice thumbImage image imagePosition { X Y } order active displayStatus danceType level attendanceTypes ageFrom ageTo fullyBooked location startDateTime endDateTime hasTasterClasses tasterPrice isAcceptingDeposits } ... on OnlineCourse { id name description subtitle price originalPrice currentPrice depositPrice thumbImage image imagePosition { X Y } order active displayStatus danceType level attendanceTypes ageFrom ageTo fullyBooked location startDateTime endDateTime hasTasterClasses tasterPrice isAcceptingDeposits } } } } } }",
+  "variables": {
+    "data": {
+      "displayStatus": "LIVE"
+    }
+  }
+}

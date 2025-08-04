@@ -1,0 +1,4 @@
+{
+  "query": "query GetCourseGroups { courseGroups { id name description shortDescription subtitle image thumbImage order active displayStatus danceType totalCourses availableCourses totalPrice discountedPrice bundleDiscount startDate endDate durationWeeks prerequisites progression skillsLearned category tags } }",
+  "variables": {}
+}

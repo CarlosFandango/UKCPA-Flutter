@@ -1,0 +1,6 @@
+{
+  "query": "query GetTasterCourses($data: CourseSearchInput!) { getTasterCourses(data: $data) { __typename ... on StudioCourse { id name description price } ... on OnlineCourse { id name description price } } }",
+  "variables": {
+    "data": {}
+  }
+}

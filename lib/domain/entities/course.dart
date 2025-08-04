@@ -41,12 +41,10 @@ enum Level {
 
 /// Types of attendance supported
 enum AttendanceType {
-  @JsonValue('ADULTS')
-  adults,
   @JsonValue('CHILDREN')
   children,
-  @JsonValue('FAMILIES')
-  families,
+  @JsonValue('ADULTS')
+  adults,
 }
 
 /// Course display status
@@ -81,17 +79,6 @@ enum Location {
   external,
 }
 
-/// Image position for course thumbnails
-@freezed
-class ImagePosition with _$ImagePosition {
-  const factory ImagePosition({
-    @Default(0.0) double x,
-    @Default(0.0) double y,
-  }) = _ImagePosition;
-
-  factory ImagePosition.fromJson(Map<String, dynamic> json) =>
-      _$ImagePositionFromJson(json);
-}
 
 /// Address information for studio courses
 @freezed
@@ -357,6 +344,7 @@ extension CourseExtensions on Course {
     return attendanceTypes.contains(AttendanceType.adults) ||
            (ageFrom != null && ageFrom! >= 16);
   }
+
 
   /// Get age range description
   String? get ageRangeDescription {
