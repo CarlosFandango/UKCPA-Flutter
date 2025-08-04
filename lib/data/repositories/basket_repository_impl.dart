@@ -1,28 +1,35 @@
+import 'dart:async';
 import 'package:graphql_flutter/graphql_flutter.dart';
-import 'package:logger/logger.dart' as logger;
+import 'package:logger/logger.dart';
 import '../../domain/entities/basket.dart';
 import '../../domain/repositories/basket_repository.dart';
 import '../datasources/graphql_client.dart';
 
 /// Implementation of BasketRepository using GraphQL API
-/// Follows the same patterns as UKCPA-Website basket management
+/// Based on UKCPA website basket functionality
 class BasketRepositoryImpl implements BasketRepository {
   final GraphQLClient _client;
-  final logger.Logger _logger = logger.Logger();
+  final Logger _logger = Logger();
 
   BasketRepositoryImpl({GraphQLClient? client})
       : _client = client ?? getGraphQLClient();
 
   @override
-  Future<Basket?> getCurrentBasket() async {
+  Future<Basket> initBasket() async {
     try {
-      _logger.d('Fetching current basket');
+      _logger.d('Initializing new basket');
 
-      const query = '''
-        query GetBasket {
-          getBasket {
+      const mutation = '''
+        mutation InitBasket {
+          initBasket {
             basket {
-              ...basketFieldsFragment
+              id
+              items { id price totalPrice }
+              subTotal
+              total
+              chargeTotal
+              payLater
+              createdAt
             }
             errors {
               path
@@ -30,7 +37,67 @@ class BasketRepositoryImpl implements BasketRepository {
             }
           }
         }
-        ${GraphQLFragments.basketFragment}
+      ''';
+
+      final result = await _client.mutate(
+        MutationOptions(
+          document: gql(mutation),
+          fetchPolicy: FetchPolicy.networkOnly,
+        ),
+      );
+
+      if (result.hasException) {
+        _logger.e('GraphQL error in initBasket: ${result.exception}');
+        throw BasketException('Failed to initialize basket: ${result.exception}');
+      }
+
+      final basketResponse = result.data?['initBasket'];
+      if (basketResponse == null || basketResponse['basket'] == null) {
+        throw const BasketException('Invalid response from server');
+      }
+
+      final basket = Basket.fromJson(basketResponse['basket']);
+      _logger.d('Successfully initialized basket: ${basket.id}');
+      return basket;
+    } catch (e) {
+      _logger.e('Error initializing basket: $e');
+      if (e is BasketException) rethrow;
+      throw BasketException('Failed to initialize basket: $e');
+    }
+  }
+
+  @override
+  Future<Basket?> getBasket() async {
+    try {
+      _logger.d('Fetching current basket');
+
+      const query = '''
+        query GetBasket {
+          getBasket {
+            basket {
+              id
+              items {
+                id
+                course { id name price }
+                price
+                totalPrice
+                isTaster
+                sessionId
+              }
+              subTotal
+              total
+              chargeTotal
+              payLater
+              discountTotal
+              creditTotal
+              createdAt
+            }
+            errors {
+              path
+              message
+            }
+          }
+        }
       ''';
 
       final result = await _client.query(
@@ -41,11 +108,8 @@ class BasketRepositoryImpl implements BasketRepository {
       );
 
       if (result.hasException) {
-        _logger.e('GraphQL error in getCurrentBasket: ${result.exception}');
-        throw BasketException(
-          message: parseGraphQLError(result.exception!),
-          originalError: result.exception,
-        );
+        _logger.e('GraphQL error in getBasket: ${result.exception}');
+        throw BasketException('Failed to fetch basket: ${result.exception}');
       }
 
       final basketResponse = result.data?['getBasket'];
@@ -62,387 +126,360 @@ class BasketRepositoryImpl implements BasketRepository {
       _logger.d('Successfully fetched basket with ${basket.itemCount} items');
       return basket;
     } catch (e) {
-      _logger.e('Error fetching current basket: $e');
-      
-      if (e is BasketException) {
-        rethrow;
-      }
-      
-      throw BasketException(
-        message: 'Failed to fetch basket: ${e.toString()}',
-        originalError: e,
-      );
+      _logger.e('Error fetching basket: $e');
+      if (e is BasketException) rethrow;
+      throw BasketException('Failed to fetch basket: $e');
     }
   }
 
   @override
-  Future<Basket> createAnonymousBasket() async {
-    try {
-      _logger.d('Creating anonymous basket');
-
-      const mutation = '''
-        mutation InitBasket {
-          initBasket {
-            basket {
-              ...basketFieldsFragment
-            }
-            errors {
-              path
-              message
-            }
-          }
-        }
-        ${GraphQLFragments.basketFragment}
-      ''';
-
-      final result = await _client.mutate(
-        MutationOptions(
-          document: gql(mutation),
-          fetchPolicy: FetchPolicy.networkOnly,
-        ),
-      );
-
-      if (result.hasException) {
-        _logger.e('GraphQL error in createAnonymousBasket: ${result.exception}');
-        throw BasketException(
-          message: parseGraphQLError(result.exception!),
-          originalError: result.exception,
-        );
-      }
-
-      final basketResponse = result.data?['initBasket'];
-      if (basketResponse == null) {
-        throw const BasketException(
-          message: 'Invalid response format from server',
-        );
-      }
-
-      // Check for errors in response
-      final errors = basketResponse['errors'] as List?;
-      if (errors != null && errors.isNotEmpty) {
-        final error = errors.first as Map<String, dynamic>;
-        throw BasketException(
-          message: error['message'] as String,
-        );
-      }
-
-      final basketData = basketResponse['basket'];
-      if (basketData == null) {
-        throw const BasketException(
-          message: 'No basket data returned from server',
-        );
-      }
-
-      final basket = Basket.fromJson(basketData);
-      _logger.d('Successfully created anonymous basket');
-      return basket;
-    } catch (e) {
-      _logger.e('Error creating anonymous basket: $e');
-      
-      if (e is BasketException) {
-        rethrow;
-      }
-      
-      throw BasketException(
-        message: 'Failed to create basket: ${e.toString()}',
-        originalError: e,
-      );
-    }
-  }
-
-  @override
-  Future<BasketOperationResult> addCourse(
-    String courseId, {
-    bool isTaster = false,
-    String? sessionId,
-  }) async {
-    try {
-      _logger.d('Adding course to basket: $courseId, isTaster: $isTaster, sessionId: $sessionId');
-
-      // Determine item type and ID based on whether it's a taster session
-      final String itemType;
-      final int itemId;
-      
-      if (isTaster && sessionId != null) {
-        itemType = 'CourseSession';
-        itemId = int.parse(sessionId);
-      } else {
-        // Need to determine if it's StudioCourse or OnlineCourse
-        // For now, we'll use a generic approach and let the server handle it
-        itemType = 'Course'; // Server will determine the specific type
-        itemId = int.parse(courseId);
-      }
-
-      const mutation = '''
-        mutation AddItem(\$itemId: Float!, \$itemType: String!, \$payDeposit: Boolean) {
-          addItem(itemId: \$itemId, itemType: \$itemType, payDeposit: \$payDeposit) {
-            basket {
-              ...basketFieldsFragment
-            }
-            errors {
-              path
-              message
-            }
-          }
-        }
-        ${GraphQLFragments.basketFragment}
-      ''';
-
-      final result = await _client.mutate(
-        MutationOptions(
-          document: gql(mutation),
-          variables: {
-            'itemId': itemId.toDouble(),
-            'itemType': itemType,
-            'payDeposit': false, // Default to full payment
-          },
-          fetchPolicy: FetchPolicy.networkOnly,
-        ),
-      );
-
-      if (result.hasException) {
-        _logger.e('GraphQL error in addCourse: ${result.exception}');
-        throw BasketException(
-          message: parseGraphQLError(result.exception!),
-          originalError: result.exception,
-        );
-      }
-
-      final basketResponse = result.data?['addItem'];
-      if (basketResponse == null) {
-        throw const BasketException(
-          message: 'Invalid response format from server',
-        );
-      }
-
-      // Check for errors in response
-      final errors = basketResponse['errors'] as List?;
-      if (errors != null && errors.isNotEmpty) {
-        final error = errors.first as Map<String, dynamic>;
-        throw BasketException(
-          message: error['message'] as String,
-        );
-      }
-
-      final basketData = basketResponse['basket'];
-      if (basketData == null) {
-        throw const BasketException(
-          message: 'No basket data returned from server',
-        );
-      }
-
-      final basket = Basket.fromJson(basketData);
-      _logger.d('Successfully added course to basket');
-      
-      return BasketOperationResult(
-        success: true,
-        basket: basket,
-        message: 'Course added to basket',
-      );
-    } catch (e) {
-      _logger.e('Error adding course to basket: $e');
-      
-      if (e is BasketException) {
-        // Return failed operation result instead of throwing
-        return BasketOperationResult(
-          success: false,
-          basket: const Basket(id: ''),
-          message: e.message,
-          errorCode: e.errorCode,
-        );
-      }
-      
-      return BasketOperationResult(
-        success: false,
-        basket: const Basket(id: ''),
-        message: 'Failed to add course: ${e.toString()}',
-      );
-    }
-  }
-
-  @override
-  Future<BasketOperationResult> removeCourse(String courseId) async {
-    try {
-      _logger.d('Removing course from basket: $courseId');
-
-      const mutation = '''
-        mutation RemoveItem(\$itemId: Float!, \$itemType: String!) {
-          removeItem(itemId: \$itemId, itemType: \$itemType) {
-            basket {
-              ...basketFieldsFragment
-            }
-            errors {
-              path
-              message
-            }
-          }
-        }
-        ${GraphQLFragments.basketFragment}
-      ''';
-
-      final result = await _client.mutate(
-        MutationOptions(
-          document: gql(mutation),
-          variables: {
-            'itemId': int.parse(courseId).toDouble(),
-            'itemType': 'Course',
-          },
-          fetchPolicy: FetchPolicy.networkOnly,
-        ),
-      );
-
-      if (result.hasException) {
-        _logger.e('GraphQL error in removeCourse: ${result.exception}');
-        throw BasketException(
-          message: parseGraphQLError(result.exception!),
-          originalError: result.exception,
-        );
-      }
-
-      final basketResponse = result.data?['removeItem'];
-      if (basketResponse == null) {
-        throw const BasketException(
-          message: 'Invalid response format from server',
-        );
-      }
-
-      // Check for errors in response
-      final errors = basketResponse['errors'] as List?;
-      if (errors != null && errors.isNotEmpty) {
-        final error = errors.first as Map<String, dynamic>;
-        throw BasketException(
-          message: error['message'] as String,
-        );
-      }
-
-      final basketData = basketResponse['basket'];
-      if (basketData == null) {
-        throw const BasketException(
-          message: 'No basket data returned from server',
-        );
-      }
-
-      final basket = Basket.fromJson(basketData);
-      _logger.d('Successfully removed course from basket');
-      
-      return BasketOperationResult(
-        success: true,
-        basket: basket,
-        message: 'Course removed from basket',
-      );
-    } catch (e) {
-      _logger.e('Error removing course from basket: $e');
-      
-      if (e is BasketException) {
-        return BasketOperationResult(
-          success: false,
-          basket: const Basket(id: ''),
-          message: e.message,
-          errorCode: e.errorCode,
-        );
-      }
-      
-      return BasketOperationResult(
-        success: false,
-        basket: const Basket(id: ''),
-        message: 'Failed to remove course: ${e.toString()}',
-      );
-    }
-  }
-
-  @override
-  Future<BasketOperationResult> updateBasketItem(
+  Future<BasketOperationResult> addItem(
     String itemId, {
-    bool? isTaster,
-    String? sessionId,
+    required String itemType,
+    bool? payDeposit,
+    String? assignToUserId,
+    DateTime? chargeFromDate,
   }) async {
-    // For now, implement as remove and add
-    // TODO: Implement proper update mutation if available
-    throw UnimplementedError('updateBasketItem not yet implemented');
-  }
-
-  @override
-  Future<BasketOperationResult> clearBasket() async {
-    // TODO: Implement clearBasket if mutation is available
-    throw UnimplementedError('clearBasket not yet implemented');
-  }
-
-  @override
-  Future<BasketOperationResult> applyPromoCode(String promoCode) async {
-    // TODO: Implement applyPromoCode mutation
-    throw UnimplementedError('applyPromoCode not yet implemented');
-  }
-
-  @override
-  Future<BasketOperationResult> removePromoCode(String promoCode) async {
-    // TODO: Implement removePromoCode mutation
-    throw UnimplementedError('removePromoCode not yet implemented');
-  }
-
-  @override
-  Future<BasketOperationResult> transferBasketToUser(
-    String sessionId,
-    String userId,
-  ) async {
-    // TODO: Implement basket transfer on user login
-    throw UnimplementedError('transferBasketToUser not yet implemented');
-  }
-
-  @override
-  Future<BasketOperationResult> refreshBasket() async {
     try {
-      final basket = await getCurrentBasket();
-      if (basket == null) {
-        throw const BasketNotFoundException();
+      _logger.d('Adding item to basket: $itemId ($itemType)');
+
+      const mutation = '''
+        mutation AddToBasket(
+          \$itemId: String!
+          \$itemType: String!
+          \$payDeposit: Boolean
+          \$assignToUserId: String
+          \$chargeFromDate: DateTime
+        ) {
+          addToBasket(
+            itemId: \$itemId
+            itemType: \$itemType
+            payDeposit: \$payDeposit
+            assignToUserId: \$assignToUserId
+            chargeFromDate: \$chargeFromDate
+          ) {
+            success
+            basket {
+              id
+              items { id price totalPrice }
+              subTotal
+              total
+              chargeTotal
+              payLater
+            }
+            message
+            errorCode
+          }
+        }
+      ''';
+
+      final result = await _client.mutate(
+        MutationOptions(
+          document: gql(mutation),
+          variables: {
+            'itemId': itemId,
+            'itemType': itemType,
+            'payDeposit': payDeposit,
+            'assignToUserId': assignToUserId,
+            'chargeFromDate': chargeFromDate?.toIso8601String(),
+          },
+          fetchPolicy: FetchPolicy.networkOnly,
+        ),
+      );
+
+      if (result.hasException) {
+        _logger.e('GraphQL error in addItem: ${result.exception}');
+        throw BasketException('Failed to add item to basket: ${result.exception}');
       }
-      
-      return BasketOperationResult(
-        success: true,
-        basket: basket,
-        message: 'Basket refreshed',
-      );
+
+      final response = result.data?['addToBasket'];
+      if (response == null) {
+        throw const BasketException('Invalid response from server');
+      }
+
+      final operationResult = BasketOperationResult.fromJson(response);
+      _logger.d('Add item result: ${operationResult.success}');
+      return operationResult;
     } catch (e) {
-      return BasketOperationResult(
-        success: false,
-        basket: const Basket(id: ''),
-        message: 'Failed to refresh basket: ${e.toString()}',
-      );
+      _logger.e('Error adding item to basket: $e');
+      if (e is BasketException) rethrow;
+      throw BasketException('Failed to add item to basket: $e');
     }
   }
 
   @override
-  Future<Basket?> getBasket(String basketId) async {
-    // TODO: Implement getBasket by ID if needed
-    throw UnimplementedError('getBasket by ID not yet implemented');
+  Future<BasketOperationResult> removeItem(String itemId, String itemType) async {
+    try {
+      _logger.d('Removing item from basket: $itemId ($itemType)');
+
+      const mutation = '''
+        mutation RemoveFromBasket(\$itemId: String!, \$itemType: String!) {
+          removeFromBasket(itemId: \$itemId, itemType: \$itemType) {
+            success
+            basket {
+              id
+              items { id price totalPrice }
+              subTotal
+              total
+              chargeTotal
+              payLater
+            }
+            message
+            errorCode
+          }
+        }
+      ''';
+
+      final result = await _client.mutate(
+        MutationOptions(
+          document: gql(mutation),
+          variables: {
+            'itemId': itemId,
+            'itemType': itemType,
+          },
+          fetchPolicy: FetchPolicy.networkOnly,
+        ),
+      );
+
+      if (result.hasException) {
+        _logger.e('GraphQL error in removeItem: ${result.exception}');
+        throw BasketException('Failed to remove item from basket: ${result.exception}');
+      }
+
+      final response = result.data?['removeFromBasket'];
+      if (response == null) {
+        throw const BasketException('Invalid response from server');
+      }
+
+      final operationResult = BasketOperationResult.fromJson(response);
+      _logger.d('Remove item result: ${operationResult.success}');
+      return operationResult;
+    } catch (e) {
+      _logger.e('Error removing item from basket: $e');
+      if (e is BasketException) rethrow;
+      throw BasketException('Failed to remove item from basket: $e');
+    }
   }
 
   @override
-  Future<void> saveBasketLocally(Basket basket) async {
-    // TODO: Implement local storage for offline support
-    throw UnimplementedError('saveBasketLocally not yet implemented');
+  Future<bool> destroyBasket() async {
+    try {
+      _logger.d('Destroying current basket');
+
+      const mutation = '''
+        mutation DestroyBasket {
+          destroyBasket {
+            success
+            message
+          }
+        }
+      ''';
+
+      final result = await _client.mutate(
+        MutationOptions(
+          document: gql(mutation),
+          fetchPolicy: FetchPolicy.networkOnly,
+        ),
+      );
+
+      if (result.hasException) {
+        _logger.e('GraphQL error in destroyBasket: ${result.exception}');
+        throw BasketException('Failed to destroy basket: ${result.exception}');
+      }
+
+      final response = result.data?['destroyBasket'];
+      final success = response?['success'] as bool? ?? false;
+      
+      _logger.d('Destroy basket result: $success');
+      return success;
+    } catch (e) {
+      _logger.e('Error destroying basket: $e');
+      if (e is BasketException) rethrow;
+      throw BasketException('Failed to destroy basket: $e');
+    }
   }
 
   @override
-  Future<Basket?> loadBasketFromLocal() async {
-    // TODO: Implement loading from local storage
-    throw UnimplementedError('loadBasketFromLocal not yet implemented');
+  Future<BasketOperationResult> useCreditForBasket(bool useCredit) async {
+    try {
+      _logger.d('Setting credit usage for basket: $useCredit');
+
+      const mutation = '''
+        mutation UseCreditForBasket(\$useCredit: Boolean!) {
+          useCreditForBasket(useCredit: \$useCredit) {
+            success
+            basket {
+              id
+              creditTotal
+              total
+              chargeTotal
+            }
+            message
+            errorCode
+          }
+        }
+      ''';
+
+      final result = await _client.mutate(
+        MutationOptions(
+          document: gql(mutation),
+          variables: {'useCredit': useCredit},
+          fetchPolicy: FetchPolicy.networkOnly,
+        ),
+      );
+
+      if (result.hasException) {
+        _logger.e('GraphQL error in useCreditForBasket: ${result.exception}');
+        throw BasketException('Failed to update credit usage: ${result.exception}');
+      }
+
+      final response = result.data?['useCreditForBasket'];
+      if (response == null) {
+        throw const BasketException('Invalid response from server');
+      }
+
+      final operationResult = BasketOperationResult.fromJson(response);
+      _logger.d('Credit usage result: ${operationResult.success}');
+      return operationResult;
+    } catch (e) {
+      _logger.e('Error updating credit usage: $e');
+      if (e is BasketException) rethrow;
+      throw BasketException('Failed to update credit usage: $e');
+    }
   }
 
   @override
-  Future<void> clearLocalBasket() async {
-    // TODO: Implement clearing local storage
-    throw UnimplementedError('clearLocalBasket not yet implemented');
+  Future<BasketOperationResult> applyPromoCode(String code) async {
+    try {
+      _logger.d('Applying promo code: $code');
+
+      const mutation = '''
+        mutation ApplyPromoCode(\$code: String!) {
+          applyPromoCode(code: \$code) {
+            success
+            basket {
+              id
+              promoCodeDiscountValue
+              discountTotal
+              total
+              chargeTotal
+            }
+            message
+            errorCode
+          }
+        }
+      ''';
+
+      final result = await _client.mutate(
+        MutationOptions(
+          document: gql(mutation),
+          variables: {'code': code},
+          fetchPolicy: FetchPolicy.networkOnly,
+        ),
+      );
+
+      if (result.hasException) {
+        _logger.e('GraphQL error in applyPromoCode: ${result.exception}');
+        throw BasketException('Failed to apply promo code: ${result.exception}');
+      }
+
+      final response = result.data?['applyPromoCode'];
+      if (response == null) {
+        throw const BasketException('Invalid response from server');
+      }
+
+      final operationResult = BasketOperationResult.fromJson(response);
+      _logger.d('Apply promo code result: ${operationResult.success}');
+      return operationResult;
+    } catch (e) {
+      _logger.e('Error applying promo code: $e');
+      if (e is BasketException) rethrow;
+      throw BasketException('Failed to apply promo code: $e');
+    }
   }
 
   @override
-  Future<DateTime?> getBasketExpiryTime() async {
-    // TODO: Implement basket expiry time if available
-    throw UnimplementedError('getBasketExpiryTime not yet implemented');
+  Future<BasketOperationResult> removePromoCode() async {
+    try {
+      _logger.d('Removing promo codes from basket');
+
+      const mutation = '''
+        mutation RemovePromoCode {
+          removePromoCode {
+            success
+            basket {
+              id
+              promoCodeDiscountValue
+              discountTotal
+              total
+              chargeTotal
+            }
+            message
+            errorCode
+          }
+        }
+      ''';
+
+      final result = await _client.mutate(
+        MutationOptions(
+          document: gql(mutation),
+          fetchPolicy: FetchPolicy.networkOnly,
+        ),
+      );
+
+      if (result.hasException) {
+        _logger.e('GraphQL error in removePromoCode: ${result.exception}');
+        throw BasketException('Failed to remove promo code: ${result.exception}');
+      }
+
+      final response = result.data?['removePromoCode'];
+      if (response == null) {
+        throw const BasketException('Invalid response from server');
+      }
+
+      final operationResult = BasketOperationResult.fromJson(response);
+      _logger.d('Remove promo code result: ${operationResult.success}');
+      return operationResult;
+    } catch (e) {
+      _logger.e('Error removing promo code: $e');
+      if (e is BasketException) rethrow;
+      throw BasketException('Failed to remove promo code: $e');
+    }
   }
 
   @override
-  Future<BasketOperationResult> extendBasketExpiry() async {
-    // TODO: Implement basket expiry extension if available
-    throw UnimplementedError('extendBasketExpiry not yet implemented');
+  Stream<Basket?> watchBasket() {
+    // For now, implement a simple polling approach
+    // In a production app, this could use GraphQL subscriptions
+    return Stream.periodic(const Duration(seconds: 30))
+        .asyncMap((_) => getBasket())
+        .distinct();
+  }
+
+  @override
+  Future<int> getBasketItemCount() async {
+    try {
+      final basket = await getBasket();
+      return basket?.itemCount ?? 0;
+    } catch (e) {
+      _logger.w('Error fetching basket item count: $e');
+      return 0;
+    }
+  }
+
+  @override
+  Future<bool> isItemInBasket(String itemId, String itemType) async {
+    try {
+      final basket = await getBasket();
+      if (basket == null) return false;
+      
+      return basket.items.any((item) => 
+        item.course.id == itemId && 
+        (itemType == 'taster' ? item.isTaster : !item.isTaster)
+      );
+    } catch (e) {
+      _logger.w('Error checking if item is in basket: $e');
+      return false;
+    }
   }
 }
