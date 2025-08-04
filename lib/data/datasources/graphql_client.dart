@@ -32,6 +32,21 @@ GraphQLClient getGraphQLClient() {
     },
   );
   
+  // Add site ID header link
+  final Link siteIdLink = Link.function((request, [forward]) {
+    // Add site ID header for multi-tenancy
+    _logger.d('Adding UKCPA site ID header to GraphQL request');
+    request = request.updateContextEntry<HttpLinkHeaders>(
+      (headers) => HttpLinkHeaders(
+        headers: {
+          ...headers?.headers ?? {},
+          'siteid': 'UKCPA', // Hard-coded for UKCPA site
+        },
+      ),
+    );
+    return forward!(request);
+  });
+  
   // Add error handling link
   final ErrorLink errorLink = ErrorLink(
     onException: (request, forward, exception) {
@@ -40,9 +55,10 @@ GraphQLClient getGraphQLClient() {
     },
   );
   
-  // Create link chain with error handling
+  // Create link chain with error handling and site ID
   final Link link = Link.from([
     errorLink,
+    siteIdLink,
     authLink,
     httpLink,
   ]);
