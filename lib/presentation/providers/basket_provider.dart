@@ -12,6 +12,7 @@ final basketRepositoryProvider = Provider<BasketRepository>((ref) {
 });
 
 /// Basket state for managing loading and data
+/// Based on UKCPA website basket functionality analysis
 class BasketState {
   final Basket? basket;
   final bool isLoading;
@@ -55,6 +56,7 @@ class BasketState {
 }
 
 /// Basket state notifier for managing basket operations
+/// Implements all operations from website analysis
 class BasketNotifier extends StateNotifier<BasketState> {
   final BasketRepository _basketRepository;
 
@@ -63,21 +65,21 @@ class BasketNotifier extends StateNotifier<BasketState> {
     _initializeBasket();
   }
 
-  /// Initialize basket by fetching current or creating anonymous basket
+  /// Initialize basket by fetching current or creating new basket
   Future<void> _initializeBasket() async {
     try {
       state = state.loading();
       _logger.d('Initializing basket');
 
       // Try to get existing basket first
-      final existingBasket = await _basketRepository.getCurrentBasket();
+      final existingBasket = await _basketRepository.getBasket();
       
       if (existingBasket != null) {
         _logger.d('Found existing basket with ${existingBasket.itemCount} items');
         state = state.success(existingBasket);
       } else {
-        _logger.d('No existing basket found, creating anonymous basket');
-        final newBasket = await _basketRepository.createAnonymousBasket();
+        _logger.d('No existing basket found, creating new basket');
+        final newBasket = await _basketRepository.initBasket();
         state = state.success(newBasket);
       }
     } catch (e) {
@@ -92,14 +94,15 @@ class BasketNotifier extends StateNotifier<BasketState> {
       state = state.loading();
       _logger.d('Refreshing basket');
 
-      final result = await _basketRepository.refreshBasket();
+      final basket = await _basketRepository.getBasket();
       
-      if (result.success) {
-        state = state.success(result.basket);
+      if (basket != null) {
+        state = state.success(basket);
         _logger.d('Basket refreshed successfully');
       } else {
-        state = state.failure(result.message ?? 'Failed to refresh basket');
-        _logger.e('Failed to refresh basket: ${result.message}');
+        // If no basket exists, create a new one
+        final newBasket = await _basketRepository.initBasket();
+        state = state.success(newBasket);
       }
     } catch (e) {
       _logger.e('Error refreshing basket: $e');
@@ -107,66 +110,198 @@ class BasketNotifier extends StateNotifier<BasketState> {
     }
   }
 
-  /// Add course to basket
-  Future<bool> addCourse(
-    String courseId, {
-    bool isTaster = false,
-    String? sessionId,
+  /// Add item to basket
+  /// [itemId] - Course ID or Session ID to add
+  /// [itemType] - Type of item (course, session, taster)
+  /// [payDeposit] - Whether to pay deposit only (for courses with deposit option)
+  /// [assignToUserId] - Optional user ID to assign the item to (gift functionality)
+  /// [chargeFromDate] - Optional date for date-based pricing
+  Future<bool> addItem(
+    String itemId, {
+    String itemType = 'course',
+    bool? payDeposit,
+    String? assignToUserId,
+    DateTime? chargeFromDate,
   }) async {
     try {
-      _logger.d('Adding course to basket: $courseId, isTaster: $isTaster');
+      _logger.d('Adding item to basket: $itemId, type: $itemType, payDeposit: $payDeposit');
 
-      final result = await _basketRepository.addCourse(
-        courseId,
-        isTaster: isTaster,
-        sessionId: sessionId,
+      final result = await _basketRepository.addItem(
+        itemId,
+        itemType: itemType,
+        payDeposit: payDeposit,
+        assignToUserId: assignToUserId,
+        chargeFromDate: chargeFromDate,
       );
 
       if (result.success) {
         state = state.success(result.basket);
-        _logger.d('Course added to basket successfully');
+        _logger.d('Item added to basket successfully');
         return true;
       } else {
-        state = state.failure(result.message ?? 'Failed to add course');
-        _logger.e('Failed to add course: ${result.message}');
+        state = state.failure(result.message ?? 'Failed to add item to basket');
+        _logger.e('Failed to add item: ${result.message}');
         return false;
       }
     } catch (e) {
-      _logger.e('Error adding course to basket: $e');
-      state = state.failure('Failed to add course: ${e.toString()}');
+      _logger.e('Error adding item to basket: $e');
+      state = state.failure('Failed to add item to basket: ${e.toString()}');
       return false;
     }
   }
 
-  /// Remove course from basket
-  Future<bool> removeCourse(String courseId) async {
-    try {
-      _logger.d('Removing course from basket: $courseId');
+  /// Add course to basket (convenience method)
+  Future<bool> addCourse(
+    String courseId, {
+    bool isTaster = false,
+    String? sessionId,
+    bool? payDeposit,
+  }) async {
+    return addItem(
+      courseId,
+      itemType: isTaster ? 'taster' : 'course',
+      payDeposit: payDeposit,
+    );
+  }
 
-      final result = await _basketRepository.removeCourse(courseId);
+  /// Remove item from basket
+  Future<bool> removeItem(String itemId, String itemType) async {
+    try {
+      _logger.d('Removing item from basket: $itemId, type: $itemType');
+
+      final result = await _basketRepository.removeItem(itemId, itemType);
 
       if (result.success) {
         state = state.success(result.basket);
-        _logger.d('Course removed from basket successfully');
+        _logger.d('Item removed from basket successfully');
         return true;
       } else {
-        state = state.failure(result.message ?? 'Failed to remove course');
-        _logger.e('Failed to remove course: ${result.message}');
+        state = state.failure(result.message ?? 'Failed to remove item from basket');
+        _logger.e('Failed to remove item: ${result.message}');
         return false;
       }
     } catch (e) {
-      _logger.e('Error removing course from basket: $e');
-      state = state.failure('Failed to remove course: ${e.toString()}');
+      _logger.e('Error removing item from basket: $e');
+      state = state.failure('Failed to remove item from basket: ${e.toString()}');
       return false;
     }
   }
 
-  /// Check if a course is in the basket
+  /// Remove course from basket (convenience method)
+  Future<bool> removeCourse(String courseId, {bool isTaster = false}) async {
+    return removeItem(courseId, isTaster ? 'taster' : 'course');
+  }
+
+  /// Clear/destroy the current basket
+  Future<bool> clearBasket() async {
+    try {
+      _logger.d('Clearing basket');
+
+      final success = await _basketRepository.destroyBasket();
+
+      if (success) {
+        // Create a new empty basket after destroying
+        final newBasket = await _basketRepository.initBasket();
+        state = state.success(newBasket);
+        _logger.d('Basket cleared successfully');
+        return true;
+      } else {
+        state = state.failure('Failed to clear basket');
+        _logger.e('Failed to clear basket');
+        return false;
+      }
+    } catch (e) {
+      _logger.e('Error clearing basket: $e');
+      state = state.failure('Failed to clear basket: ${e.toString()}');
+      return false;
+    }
+  }
+
+  /// Toggle credit usage for the basket
+  Future<bool> toggleCreditUsage(bool useCredit) async {
+    try {
+      _logger.d('Toggling credit usage: $useCredit');
+
+      final result = await _basketRepository.useCreditForBasket(useCredit);
+
+      if (result.success) {
+        state = state.success(result.basket);
+        _logger.d('Credit usage updated successfully');
+        return true;
+      } else {
+        state = state.failure(result.message ?? 'Failed to update credit usage');
+        _logger.e('Failed to update credit usage: ${result.message}');
+        return false;
+      }
+    } catch (e) {
+      _logger.e('Error updating credit usage: $e');
+      state = state.failure('Failed to update credit usage: ${e.toString()}');
+      return false;
+    }
+  }
+
+  /// Apply promo code to basket
+  Future<bool> applyPromoCode(String code) async {
+    try {
+      _logger.d('Applying promo code: $code');
+
+      final result = await _basketRepository.applyPromoCode(code);
+
+      if (result.success) {
+        state = state.success(result.basket);
+        _logger.d('Promo code applied successfully');
+        return true;
+      } else {
+        state = state.failure(result.message ?? 'Failed to apply promo code');
+        _logger.e('Failed to apply promo code: ${result.message}');
+        return false;
+      }
+    } catch (e) {
+      _logger.e('Error applying promo code: $e');
+      state = state.failure('Failed to apply promo code: ${e.toString()}');
+      return false;
+    }
+  }
+
+  /// Remove promo codes from basket
+  Future<bool> removePromoCode() async {
+    try {
+      _logger.d('Removing promo codes');
+
+      final result = await _basketRepository.removePromoCode();
+
+      if (result.success) {
+        state = state.success(result.basket);
+        _logger.d('Promo codes removed successfully');
+        return true;
+      } else {
+        state = state.failure(result.message ?? 'Failed to remove promo codes');
+        _logger.e('Failed to remove promo codes: ${result.message}');
+        return false;
+      }
+    } catch (e) {
+      _logger.e('Error removing promo codes: $e');
+      state = state.failure('Failed to remove promo codes: ${e.toString()}');
+      return false;
+    }
+  }
+
+  /// Check if an item is in the basket
+  Future<bool> isItemInBasket(String itemId, String itemType) async {
+    try {
+      return await _basketRepository.isItemInBasket(itemId, itemType);
+    } catch (e) {
+      _logger.w('Error checking if item is in basket: $e');
+      return false;
+    }
+  }
+
+  /// Check if a course is in the basket (convenience method)
   bool isCourseInBasket(String courseId) {
     final basket = state.basket;
     if (basket == null) return false;
     
-    return basket.containsCourse(courseId);
+    return basket.items.any((item) => item.course.id == courseId);
   }
 
   /// Get basket item for a specific course
@@ -174,7 +309,11 @@ class BasketNotifier extends StateNotifier<BasketState> {
     final basket = state.basket;
     if (basket == null) return null;
     
-    return basket.getItemForCourse(courseId);
+    try {
+      return basket.items.firstWhere((item) => item.course.id == courseId);
+    } catch (e) {
+      return null;
+    }
   }
 
   /// Clear any error state
@@ -224,7 +363,19 @@ final basketIsEmptyProvider = Provider<bool>((ref) {
 /// Convenience provider for basket total
 final basketTotalProvider = Provider<int>((ref) {
   final basket = ref.watch(currentBasketProvider);
-  return basket?.finalTotal ?? 0;
+  return basket?.total ?? 0;
+});
+
+/// Convenience provider for basket charge total (amount to pay now)
+final basketChargeTotalProvider = Provider<int>((ref) {
+  final basket = ref.watch(currentBasketProvider);
+  return basket?.chargeTotal ?? 0;
+});
+
+/// Convenience provider for basket pay later amount
+final basketPayLaterProvider = Provider<int>((ref) {
+  final basket = ref.watch(currentBasketProvider);
+  return basket?.payLater ?? 0;
 });
 
 /// Provider for checking if a specific course is in basket
@@ -233,16 +384,49 @@ final courseInBasketProvider = Provider.family<bool, String>((ref, courseId) {
   return basketNotifier.isCourseInBasket(courseId);
 });
 
-/// Parameters for course basket operations
+/// Parameters for basket item operations
+class BasketItemParams {
+  final String itemId;
+  final String itemType;
+  final bool? payDeposit;
+  final String? assignToUserId;
+  final DateTime? chargeFromDate;
+
+  const BasketItemParams({
+    required this.itemId,
+    this.itemType = 'course',
+    this.payDeposit,
+    this.assignToUserId,
+    this.chargeFromDate,
+  });
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is BasketItemParams &&
+        other.itemId == itemId &&
+        other.itemType == itemType &&
+        other.payDeposit == payDeposit &&
+        other.assignToUserId == assignToUserId &&
+        other.chargeFromDate == chargeFromDate;
+  }
+
+  @override
+  int get hashCode => Object.hash(itemId, itemType, payDeposit, assignToUserId, chargeFromDate);
+}
+
+/// Parameters for course basket operations (backwards compatibility)
 class CourseBasketParams {
   final String courseId;
   final bool isTaster;
   final String? sessionId;
+  final bool? payDeposit;
 
   const CourseBasketParams({
     required this.courseId,
     this.isTaster = false,
     this.sessionId,
+    this.payDeposit,
   });
 
   @override
@@ -251,25 +435,56 @@ class CourseBasketParams {
     return other is CourseBasketParams &&
         other.courseId == courseId &&
         other.isTaster == isTaster &&
-        other.sessionId == sessionId;
+        other.sessionId == sessionId &&
+        other.payDeposit == payDeposit;
   }
 
   @override
-  int get hashCode => Object.hash(courseId, isTaster, sessionId);
+  int get hashCode => Object.hash(courseId, isTaster, sessionId, payDeposit);
 }
 
-/// Provider for adding course to basket
+/// Provider for adding item to basket
+final addItemToBasketProvider = FutureProvider.family<bool, BasketItemParams>((ref, params) async {
+  final basketNotifier = ref.watch(basketNotifierProvider.notifier);
+  return basketNotifier.addItem(
+    params.itemId,
+    itemType: params.itemType,
+    payDeposit: params.payDeposit,
+    assignToUserId: params.assignToUserId,
+    chargeFromDate: params.chargeFromDate,
+  );
+});
+
+/// Provider for adding course to basket (backwards compatibility)
 final addCourseToBasketProvider = FutureProvider.family<bool, CourseBasketParams>((ref, params) async {
   final basketNotifier = ref.watch(basketNotifierProvider.notifier);
   return basketNotifier.addCourse(
     params.courseId,
     isTaster: params.isTaster,
-    sessionId: params.sessionId,
+    payDeposit: params.payDeposit,
   );
 });
 
-/// Provider for removing course from basket
+/// Provider for removing item from basket
+final removeItemFromBasketProvider = FutureProvider.family<bool, BasketItemParams>((ref, params) async {
+  final basketNotifier = ref.watch(basketNotifierProvider.notifier);
+  return basketNotifier.removeItem(params.itemId, params.itemType);
+});
+
+/// Provider for removing course from basket (backwards compatibility)
 final removeCourseFromBasketProvider = FutureProvider.family<bool, String>((ref, courseId) async {
   final basketNotifier = ref.watch(basketNotifierProvider.notifier);
   return basketNotifier.removeCourse(courseId);
+});
+
+/// Provider for applying promo code
+final applyPromoCodeProvider = FutureProvider.family<bool, String>((ref, code) async {
+  final basketNotifier = ref.watch(basketNotifierProvider.notifier);
+  return basketNotifier.applyPromoCode(code);
+});
+
+/// Provider for toggling credit usage
+final toggleCreditUsageProvider = FutureProvider.family<bool, bool>((ref, useCredit) async {
+  final basketNotifier = ref.watch(basketNotifierProvider.notifier);
+  return basketNotifier.toggleCreditUsage(useCredit);
 });
