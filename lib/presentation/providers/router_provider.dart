@@ -7,6 +7,7 @@ import '../screens/auth/register_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/course_groups/course_group_discovery_screen.dart';
 import '../screens/courses/course_detail_screen.dart';
+import '../screens/course_groups/course_group_detail_screen.dart';
 import '../screens/basket/basket_screen.dart';
 import '../screens/checkout/checkout_screen.dart';
 import '../screens/account/account_screen.dart';
@@ -82,15 +83,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/courses',
         builder: (context, state) => const CourseGroupDiscoveryScreen(),
-        routes: [
-          GoRoute(
-            path: ':id',
-            builder: (context, state) {
-              final courseId = state.pathParameters['id']!;
-              return CourseDetailScreen(courseId: courseId);
-            },
-          ),
-        ],
+      ),
+      GoRoute(
+        path: '/course-groups/:id',
+        builder: (context, state) {
+          final courseGroupId = int.parse(state.pathParameters['id']!);
+          return CourseGroupDetailScreen(courseGroupId: courseGroupId);
+        },
+      ),
+      GoRoute(
+        path: '/courses/:id',
+        builder: (context, state) {
+          final courseId = state.pathParameters['id']!;
+          return CourseDetailScreen(courseId: courseId);
+        },
       ),
       GoRoute(
         path: '/basket',
@@ -197,6 +203,7 @@ extension GoRouterExtension on BuildContext {
   
   // Course navigation
   void goToCourses() => go('/courses');
+  void goToCourseGroup(int id) => go('/course-groups/$id');
   void goToCourse(String id) {
     if (id.isNotEmpty) {
       go('/courses/$id');

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/terms_provider.dart';
+import '../../providers/router_provider.dart';
 import '../../widgets/course_groups/term_selector.dart';
 import '../../widgets/course_groups/course_group_grid.dart';
 import '../../widgets/course_groups/course_group_search_bar.dart';
@@ -387,15 +388,6 @@ class _CourseGroupDiscoveryScreenState extends ConsumerState<CourseGroupDiscover
   }
 
   void _navigateToCourseGroupDetail(int courseGroupId) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          appBar: AppBar(title: const Text('Course Group Detail')),
-          body: Center(
-            child: Text('Course Group $courseGroupId\n(Implementation pending)'),
-          ),
-        ),
-      ),
-    );
+    context.goToCourseGroup(courseGroupId);
   }
 }

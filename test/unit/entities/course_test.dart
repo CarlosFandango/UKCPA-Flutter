@@ -371,11 +371,11 @@ void main() {
   });
 
   group('Supporting Entity Tests', () {
-    test('ImagePosition should create with default values', () {
-      const position = ImagePosition();
+    test('ImagePosition should create with required values', () {
+      const position = ImagePosition(X: 0.5, Y: 0.3);
       
-      expect(position.x, equals(0.0));
-      expect(position.y, equals(0.0));
+      expect(position.X, equals(0.5));
+      expect(position.Y, equals(0.3));
     });
 
     test('Address should handle optional fields', () {
@@ -434,7 +434,6 @@ void main() {
     test('AttendanceType enum should have correct values', () {
       expect(AttendanceType.adults.name, equals('adults'));
       expect(AttendanceType.children.name, equals('children'));
-      expect(AttendanceType.families.name, equals('families'));
     });
 
     test('Location enum should have correct values', () {

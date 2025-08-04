@@ -303,19 +303,13 @@ void main() {
       test('should fetch course groups successfully', () async {
         // Arrange
         final testGroups = [
-          CourseGroup(
-            id: 'group1',
+          const CourseGroup(
+            id: 1,
             name: 'Ballet Fundamentals',
-            active: true,
-            courses: [],
-            attendanceTypes: [],
           ),
-          CourseGroup(
-            id: 'group2',
+          const CourseGroup(
+            id: 2,
             name: 'Hip Hop Basics',
-            active: true,
-            courses: [],
-            attendanceTypes: [],
           ),
         ];
 
@@ -408,7 +402,7 @@ void main() {
         final testOptions = CourseFilterOptions(
           availableDanceTypes: [DanceType.ballet, DanceType.hiphop],
           availableLevels: [Level.beginner, Level.intermediate],
-          availableLocations: [Location.studio, Location.online],
+          availableLocations: [Location.studio1, Location.online],
           availableAttendanceTypes: [AttendanceType.adults, AttendanceType.children],
           minPrice: 50,
           maxPrice: 300,
