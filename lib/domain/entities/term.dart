@@ -13,24 +13,24 @@ class Term with _$Term {
     required String name,
     required DateTime startDate,
     required DateTime endDate,
-    @Default([]) List<Holiday> holidays,
+    @Default([]) List<ClassHoliday> holidays,
     @Default([]) List<CourseGroup> courseGroups,
   }) = _Term;
 
   factory Term.fromJson(Map<String, dynamic> json) => _$TermFromJson(json);
 }
 
-/// Holiday periods within a term
-/// Based on holiday structure from TermFragment
+/// Class holiday periods within a term
+/// Based on ClassHoliday structure from server GraphQL schema
 @freezed
-class Holiday with _$Holiday {
-  const factory Holiday({
+class ClassHoliday with _$ClassHoliday {
+  const factory ClassHoliday({
     required String name,
     required DateTime startDateTime,
     required DateTime endDateTime,
-  }) = _Holiday;
+  }) = _ClassHoliday;
 
-  factory Holiday.fromJson(Map<String, dynamic> json) => _$HolidayFromJson(json);
+  factory ClassHoliday.fromJson(Map<String, dynamic> json) => _$ClassHolidayFromJson(json);
 }
 
 /// Extension methods for term utilities
@@ -87,7 +87,7 @@ extension TermExtensions on Term {
   }
 
   /// Get holiday that contains the given date, if any
-  Holiday? getHolidayForDate(DateTime date) {
+  ClassHoliday? getHolidayForDate(DateTime date) {
     return holidays.where((holiday) =>
         (date.isAtSameMomentAs(holiday.startDateTime) || date.isAfter(holiday.startDateTime)) &&
         date.isBefore(holiday.endDateTime)
@@ -95,7 +95,7 @@ extension TermExtensions on Term {
   }
 
   /// Get all holidays within a date range
-  List<Holiday> getHolidaysInRange(DateTime start, DateTime end) {
+  List<ClassHoliday> getHolidaysInRange(DateTime start, DateTime end) {
     return holidays.where((holiday) =>
         holiday.startDateTime.isBefore(end) && holiday.endDateTime.isAfter(start)
     ).toList();
@@ -174,7 +174,7 @@ extension TermExtensions on Term {
 }
 
 /// Extension methods for holiday utilities
-extension HolidayExtensions on Holiday {
+extension ClassHolidayExtensions on ClassHoliday {
   /// Get the duration of the holiday in days
   int get durationInDays {
     return endDateTime.difference(startDateTime).inDays;

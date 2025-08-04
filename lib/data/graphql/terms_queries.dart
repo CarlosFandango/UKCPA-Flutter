@@ -1,9 +1,9 @@
 /// GraphQL queries for Terms and CourseGroups
 /// Based on UKCPA-Website GraphQL schema
 
-/// Fragment for Holiday data within Terms
-const String holidayFragment = '''
-  fragment HolidayFragment on Holiday {
+/// Fragment for ClassHoliday data within Terms
+const String classHolidayFragment = '''
+  fragment ClassHolidayFragment on ClassHoliday {
     name
     startDateTime
     endDateTime
@@ -175,7 +175,7 @@ const String termFragment = '''
     endDate
     startDate
     holidays {
-      ...HolidayFragment
+      ...ClassHolidayFragment
     }
     courseGroups {
       ...CourseGroupFragment
@@ -185,7 +185,7 @@ const String termFragment = '''
 
 /// Complete query for fetching terms - matches GetTerms exactly
 const String getTermsQuery = '''
-  $holidayFragment
+  $classHolidayFragment
   $imagePositionFragment
   $studioCourseFragment
   $onlineCourseFragment
