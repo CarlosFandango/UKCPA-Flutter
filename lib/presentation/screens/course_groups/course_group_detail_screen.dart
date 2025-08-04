@@ -7,6 +7,7 @@ import 'widgets/course_group_header.dart';
 import 'widgets/courses_within_group_list.dart';
 import 'widgets/course_within_group_card.dart';
 import '../../../domain/entities/course_group.dart';
+import '../../../domain/entities/course.dart';
 
 /// Course Group Detail Screen - Display course group info and individual courses within the group
 class CourseGroupDetailScreen extends ConsumerWidget {
@@ -175,8 +176,8 @@ class CourseGroupDetailScreen extends ConsumerWidget {
   }
 
   /// Sort courses by order field (matching website behavior)
-  List<dynamic> _sortCourses(List<dynamic> courses) {
-    final sortedCourses = List.from(courses);
+  List<Course> _sortCourses(List<Course> courses) {
+    final sortedCourses = List<Course>.from(courses);
     sortedCourses.sort((a, b) {
       final orderA = a.order ?? 999;
       final orderB = b.order ?? 999;
@@ -186,7 +187,7 @@ class CourseGroupDetailScreen extends ConsumerWidget {
   }
 
   /// Build responsive grid for multiple courses (side by side)
-  Widget _buildCourseCardsGrid(BuildContext context, List<dynamic> courses) {
+  Widget _buildCourseCardsGrid(BuildContext context, List<Course> courses) {
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       sliver: SliverGrid(
@@ -212,7 +213,7 @@ class CourseGroupDetailScreen extends ConsumerWidget {
   }
 
   /// Build single course centered layout
-  Widget _buildSingleCourseLayout(BuildContext context, dynamic course) {
+  Widget _buildSingleCourseLayout(BuildContext context, Course course) {
     return SliverPadding(
       padding: const EdgeInsets.all(16),
       sliver: SliverToBoxAdapter(
@@ -278,7 +279,7 @@ class CourseGroupDetailScreen extends ConsumerWidget {
   }
 
   /// Handle add to basket action
-  void _handleAddToBasket(BuildContext context, dynamic course) {
+  void _handleAddToBasket(BuildContext context, Course course) {
     // TODO: Implement basket functionality in Phase 3
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -296,7 +297,7 @@ class CourseGroupDetailScreen extends ConsumerWidget {
   }
 
   /// Handle course tap action
-  void _handleCourseTap(BuildContext context, dynamic course) {
+  void _handleCourseTap(BuildContext context, Course course) {
     // TODO: Navigate to individual course detail screen (Slice 2.5)
     // For now, show course info
     showDialog(
