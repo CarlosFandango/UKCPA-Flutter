@@ -2,7 +2,7 @@
 
 **Last Updated**: 2025-08-04  
 **Current Phase**: Phase 2 - Course Discovery 🚀 IN PROGRESS  
-**Progress**: 1/5 slices complete (20%)
+**Progress**: 2/5 slices complete (40%)
 
 ## ✅ Completed Slices
 
@@ -101,7 +101,21 @@
   - [x] Extension methods for business logic
   - [x] Price handling in pence for accurate currency display
 
-**Current Architecture**: Terms → Course Groups → Courses hierarchy established
+### Slice 2.2: Terms Repository with getTerms Query
+- **Status**: ✅ Complete (2025-08-04)
+- **Effort**: 6 hours
+- **Key Deliverables**:
+  - [x] Terms repository interface with caching and refresh methods
+  - [x] Complete GraphQL queries matching website schema exactly
+  - [x] Repository implementation with 5-minute intelligent caching
+  - [x] Comprehensive Riverpod state management
+  - [x] TermsNotifier and CourseGroupNotifier for reactive data
+  - [x] 8+ convenience providers for search and filtering
+  - [x] Custom RepositoryException with proper error handling
+  - [x] Professional logging with Logger instead of print
+  - [x] Repository testing (9 tests passing)
+
+**Current Architecture**: Complete Terms → Course Groups → Courses data flow
 
 ## 📊 Quality Metrics
 
