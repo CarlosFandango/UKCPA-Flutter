@@ -134,6 +134,15 @@ class RouterRefreshNotifier extends ChangeNotifier {
 
 /// Check if a route requires authentication
 bool _isProtectedRoute(String route) {
+  // Root and auth routes are explicitly public
+  const publicRoutes = [
+    '/',
+    '/auth/login',
+    '/auth/register',
+    '/basket', // Basket can be used by guests
+  ];
+  
+  // Protected routes require authentication
   const protectedRoutes = [
     '/home',
     '/checkout',
@@ -141,20 +150,22 @@ bool _isProtectedRoute(String route) {
     '/courses', // Course browsing requires auth for full features
   ];
   
-  // Root and auth routes are not protected
-  const publicRoutes = [
-    '/',
-    '/auth',
-    '/basket', // Basket can be used by guests
-  ];
-  
-  // Check if route is explicitly public
-  if (publicRoutes.any((r) => route.startsWith(r))) {
-    return false;
+  // Check if route is explicitly public first
+  for (final publicRoute in publicRoutes) {
+    if (route == publicRoute || (route.startsWith(publicRoute) && publicRoute != '/')) {
+      return false;
+    }
   }
   
   // Check if route is explicitly protected
-  return protectedRoutes.any((r) => route.startsWith(r));
+  for (final protectedRoute in protectedRoutes) {
+    if (route.startsWith(protectedRoute)) {
+      return true;
+    }
+  }
+  
+  // Default to requiring auth for unknown routes
+  return true;
 }
 
 /// Validate redirect URLs to prevent open redirect attacks
