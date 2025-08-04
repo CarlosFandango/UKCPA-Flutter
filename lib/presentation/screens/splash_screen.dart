@@ -16,65 +16,38 @@ class SplashScreen extends ConsumerStatefulWidget {
 }
 
 class _SplashScreenState extends ConsumerState<SplashScreen> {
-  @override
-  void initState() {
-    super.initState();
-    _initializeApp();
-  }
+  bool _hasNavigated = false;
 
-  /// Initialize the app and navigate to appropriate screen
-  Future<void> _initializeApp() async {
-    // Wait minimum time for splash visibility
-    final splashDelay = Future.delayed(const Duration(seconds: 1));
+  /// Navigate to appropriate screen based on auth state
+  void _navigateBasedOnAuthState(AuthState authState) {
+    if (_hasNavigated || !mounted) return;
     
-    // Wait for auth state to be determined (initial check)
-    await Future.wait([
-      splashDelay,
-      _waitForAuthCheck(),
-    ]);
+    _hasNavigated = true;
     
-    if (mounted) {
-      final authState = ref.read(authStateProvider);
-      
-      // Navigate based on auth state
-      if (authState is AuthStateAuthenticated) {
-        context.go('/home');
-      } else if (authState is AuthStateError) {
-        // Show error but allow navigation to login
-        context.go('/auth/login');
-      } else {
-        context.go('/auth/login');
-      }
+    // Navigate based on auth state
+    if (authState is AuthStateAuthenticated) {
+      context.go('/home');
+    } else if (authState is AuthStateError) {
+      // Show error but allow navigation to login
+      context.go('/auth/login');
+    } else {
+      context.go('/auth/login');
     }
-  }
-  
-  /// Wait for initial auth check to complete
-  Future<void> _waitForAuthCheck() async {
-    final completer = Completer<void>();
-    
-    // Listen for auth state changes
-    ref.listen(authStateProvider, (previous, next) {
-      // Complete when we move from initial/loading to a definitive state
-      if (next is! AuthStateInitial && next is! AuthStateLoading) {
-        if (!completer.isCompleted) {
-          completer.complete();
-        }
-      }
-    });
-    
-    // Timeout after 10 seconds
-    Timer(const Duration(seconds: 10), () {
-      if (!completer.isCompleted) {
-        completer.complete();
-      }
-    });
-    
-    await completer.future;
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    
+    // Listen for auth state changes and navigate accordingly
+    ref.listen(authStateProvider, (previous, next) {
+      // Wait for a minimum splash time and then navigate
+      if (next is! AuthStateInitial && next is! AuthStateLoading) {
+        Future.delayed(const Duration(seconds: 1), () {
+          _navigateBasedOnAuthState(next);
+        });
+      }
+    });
     
     return Scaffold(
       backgroundColor: theme.colorScheme.primary,

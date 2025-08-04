@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 // import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:mcp_toolkit/mcp_toolkit.dart';
 import 'core/constants/app_constants.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/providers/router_provider.dart';
@@ -19,6 +20,9 @@ Future<void> main() async {
   
   // Initialize GraphQL cache
   await initHiveForFlutter();
+  
+  // Initialize MCP Toolkit for debugging and testing
+  // await McpToolkit.initialize();
   
   // Configure Stripe (temporarily disabled for iOS setup)
   // Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? '';
