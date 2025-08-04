@@ -5,7 +5,7 @@ import '../screens/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/home/home_screen.dart';
-import '../screens/courses/course_list_screen.dart';
+import '../screens/course_groups/course_group_discovery_screen.dart';
 import '../screens/courses/course_detail_screen.dart';
 import '../screens/basket/basket_screen.dart';
 import '../screens/checkout/checkout_screen.dart';
@@ -81,7 +81,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/courses',
-        builder: (context, state) => const CourseListScreen(),
+        builder: (context, state) => const CourseGroupDiscoveryScreen(),
         routes: [
           GoRoute(
             path: ':id',
