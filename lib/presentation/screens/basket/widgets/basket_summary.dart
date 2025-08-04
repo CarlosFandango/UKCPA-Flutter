@@ -354,7 +354,7 @@ class _BasketSummaryState extends State<BasketSummary> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: theme.colorScheme.successContainer.withOpacity(0.3),
+              color: Colors.green.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: theme.colorScheme.primary.withOpacity(0.3),

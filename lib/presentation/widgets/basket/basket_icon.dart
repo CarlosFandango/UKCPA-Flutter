@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../domain/entities/basket.dart';
 import '../../providers/basket_provider.dart';
 
 /// Basket icon widget with item count badge

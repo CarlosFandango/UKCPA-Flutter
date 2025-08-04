@@ -139,6 +139,7 @@ extension BasketItemExtensions on BasketItem {
   /// Get formatted price strings
   String get formattedPrice => '£${(price / 100).toStringAsFixed(2)}';
   String get formattedTotalPrice => '£${(totalPrice / 100).toStringAsFixed(2)}';
+  String get formattedDiscountValue => '£${(totalDiscount / 100).toStringAsFixed(2)}';
 
   /// Get item type display name based on course type and properties
   String get itemTypeDisplay {
