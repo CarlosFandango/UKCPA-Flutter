@@ -5,7 +5,7 @@ import '../entities/course_group.dart';
 abstract class TermsRepository {
   /// Fetch all terms with their course groups
   /// Uses getTerms GraphQL query with displayStatus filter
-  Future<List<Term>> getTerms({String displayStatus = 'Live'});
+  Future<List<Term>> getTerms({String displayStatus = 'LIVE'});
 
   /// Fetch a specific course group by ID
   /// Uses getCourseGroup GraphQL query
@@ -15,5 +15,5 @@ abstract class TermsRepository {
   Future<void> clearCache();
 
   /// Refresh terms data by clearing cache and fetching fresh data
-  Future<List<Term>> refreshTerms({String displayStatus = 'Live'});
+  Future<List<Term>> refreshTerms({String displayStatus = 'LIVE'});
 }

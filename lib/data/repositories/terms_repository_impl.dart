@@ -27,7 +27,7 @@ class TermsRepositoryImpl implements TermsRepository {
   TermsRepositoryImpl(this._client);
 
   @override
-  Future<List<Term>> getTerms({String displayStatus = 'Live'}) async {
+  Future<List<Term>> getTerms({String displayStatus = 'LIVE'}) async {
     // Check cache first
     if (_isValidCache(displayStatus)) {
       return _cachedTerms!;
@@ -144,7 +144,7 @@ class TermsRepositoryImpl implements TermsRepository {
   }
 
   @override
-  Future<List<Term>> refreshTerms({String displayStatus = 'Live'}) async {
+  Future<List<Term>> refreshTerms({String displayStatus = 'LIVE'}) async {
     await clearCache();
     return getTerms(displayStatus: displayStatus);
   }
@@ -163,12 +163,12 @@ class TermsRepositoryImpl implements TermsRepository {
 
   /// Parse Term from JSON data
   Term _parseTermFromJson(Map<String, dynamic> json) {
-    final List<Holiday> holidays = [];
+    final List<ClassHoliday> holidays = [];
     final holidaysData = json['holidays'] as List<dynamic>? ?? [];
     
     for (final holidayJson in holidaysData) {
       try {
-        final holiday = Holiday(
+        final holiday = ClassHoliday(
           name: holidayJson['name'] as String,
           startDateTime: DateTime.parse(holidayJson['startDateTime'] as String),
           endDateTime: DateTime.parse(holidayJson['endDateTime'] as String),

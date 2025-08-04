@@ -61,7 +61,7 @@ class TermsNotifier extends _$TermsNotifier {
   }
 
   /// Load terms with the specified display status
-  Future<void> loadTerms({String displayStatus = 'Live'}) async {
+  Future<void> loadTerms({String displayStatus = 'LIVE'}) async {
     try {
       state = const TermsStateLoading();
       
@@ -87,7 +87,7 @@ class TermsNotifier extends _$TermsNotifier {
   }
 
   /// Refresh terms data
-  Future<void> refreshTerms({String displayStatus = 'Live'}) async {
+  Future<void> refreshTerms({String displayStatus = 'LIVE'}) async {
     try {
       final repository = ref.read(termsRepositoryProvider);
       final terms = await repository.refreshTerms(displayStatus: displayStatus);
@@ -172,7 +172,7 @@ class CourseGroupNotifier extends _$CourseGroupNotifier {
 @riverpod
 Future<List<Term>> liveTerms(LiveTermsRef ref) async {
   final repository = ref.watch(termsRepositoryProvider);
-  return repository.getTerms(displayStatus: 'Live');
+  return repository.getTerms(displayStatus: 'LIVE');
 }
 
 /// Provider for getting terms by display status
