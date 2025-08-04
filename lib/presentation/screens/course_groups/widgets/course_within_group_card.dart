@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../../../domain/entities/course.dart';
 import '../../../../core/utils/money_formatter.dart';
+import '../../../../core/utils/date_utils.dart' as date_utils;
+import '../../../../core/utils/text_utils.dart';
 import 'add_to_basket_button.dart';
+import 'course_type_badge.dart';
+import 'taster_session_dropdown.dart';
+import 'deposit_payment_section.dart';
 
 /// Card widget for displaying an individual course within a course group
+/// Enhanced to match the website's course display exactly
 class CourseWithinGroupCard extends StatelessWidget {
   final Course course;
   final VoidCallback onAddToBasket;
@@ -20,77 +26,139 @@ class CourseWithinGroupCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isAvailable = course.isAvailable;
+    final isFullyBooked = course.fullyBooked;
 
-    return Card(
-      elevation: isAvailable ? 2 : 1,
-      shadowColor: theme.colorScheme.shadow.withOpacity(0.1),
-      shape: RoundedRectangleBorder(
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: isAvailable 
-              ? theme.colorScheme.primary.withOpacity(0.2)
-              : theme.colorScheme.outline.withOpacity(0.1),
-          width: 1,
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.shadow.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: InkWell(
-        onTap: onTapCourse,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: theme.colorScheme.surface,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Course Header
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: _buildCourseInfo(theme, isAvailable),
-                  ),
-                  const SizedBox(width: 12),
-                  _buildCourseTypeChip(theme),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Course Image (if available)
+          if (course.image != null) _buildCourseImage(theme),
+          
+          // Course Content
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Course Title and Badge
+                _buildCourseHeader(theme),
+                const SizedBox(height: 12),
+                
+                // Course Details Grid (matching website layout)
+                _buildCourseDetailsGrid(theme),
+                const SizedBox(height: 16),
+                
+                // Price and Main Action
+                _buildPriceAndMainAction(theme, isAvailable, isFullyBooked),
+                
+                // Taster Session Option (if available)
+                if (_shouldShowTasterSessions()) ...[
+                  const SizedBox(height: 16),
+                  _buildTasterSessionSection(),
                 ],
-              ),
-              
-              const SizedBox(height: 12),
-              
-              // Course Details
-              _buildCourseDetails(theme),
-              
-              const SizedBox(height: 16),
-              
-              // Price and Action Section
-              _buildPriceAndActions(theme, isAvailable),
-            ],
+                
+                // Deposit Payment Option (if available)
+                if (_shouldShowDepositOption()) ...[
+                  const SizedBox(height: 16),
+                  _buildDepositPaymentSection(),
+                ],
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildCourseInfo(ThemeData theme, bool isAvailable) {
+  /// Build course image with proper positioning
+  Widget _buildCourseImage(ThemeData theme) {
+    final imagePosition = course.imagePosition;
+    final positionX = imagePosition?.X ?? 0;
+    final positionY = imagePosition?.Y ?? 0;
+    
+    return Container(
+      height: 160,
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(16),
+          topRight: Radius.circular(16),
+        ),
+        image: DecorationImage(
+          image: NetworkImage(course.image!),
+          fit: BoxFit.cover,
+          alignment: Alignment(
+            (positionX / 50) - 1, // Convert 0-100 to -1 to 1
+            (positionY / 50) - 1,
+          ),
+        ),
+      ),
+      child: Stack(
+        children: [
+          // Gradient overlay
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.3),
+                ],
+              ),
+            ),
+          ),
+          
+          // Course type badge
+          Positioned(
+            top: 8,
+            left: 8,
+            child: CourseTypeBadge.fromCourse(
+              course,
+              size: CourseTypeBadgeSize.small,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build course header with title and badge
+  Widget _buildCourseHeader(ThemeData theme) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Course Name
+        // Course Name (centered like website)
         Text(
           course.name,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: isAvailable 
-                ? theme.colorScheme.onSurface
-                : theme.colorScheme.onSurface.withOpacity(0.6),
+            color: theme.colorScheme.onSurface,
           ),
+          textAlign: TextAlign.center,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
         
-        // Course Subtitle
+        // Course Subtitle (if available)
         if (course.subtitle != null && course.subtitle!.isNotEmpty) ...[
           const SizedBox(height: 4),
           Text(
@@ -98,288 +166,202 @@ class CourseWithinGroupCard extends StatelessWidget {
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.7),
             ),
+            textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
         ],
+      ],
+    );
+  }
+
+  /// Build course details grid matching website layout
+  Widget _buildCourseDetailsGrid(ThemeData theme) {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 12,
+      childAspectRatio: 3,
+      children: [
+        // Time
+        if (course.startDateTime != null && course.endDateTime != null)
+          _buildDetailGridItem(
+            Icons.access_time,
+            'Time',
+            date_utils.DateUtils.getTimeRange(course.startDateTime!, course.endDateTime!),
+            theme,
+          ),
         
-        // Availability Status
-        const SizedBox(height: 8),
-        _buildAvailabilityStatus(theme, isAvailable),
-      ],
-    );
-  }
-
-  Widget _buildCourseTypeChip(ThemeData theme) {
-    final isOnline = course is OnlineCourse;
-    final isStudio = course is StudioCourse;
-    
-    Color chipColor;
-    IconData chipIcon;
-    String chipText;
-    
-    if (isOnline) {
-      chipColor = theme.colorScheme.tertiary;
-      chipIcon = Icons.computer;
-      chipText = 'Online';
-    } else if (isStudio) {
-      chipColor = theme.colorScheme.secondary;
-      chipIcon = Icons.place;
-      chipText = 'Studio';
-    } else {
-      chipColor = theme.colorScheme.outline;
-      chipIcon = Icons.class_;
-      chipText = 'Course';
-    }
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: chipColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: chipColor.withOpacity(0.3),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            chipIcon,
-            size: 12,
-            color: chipColor,
+        // Dates  
+        if (course.startDateTime != null && course.endDateTime != null)
+          _buildDetailGridItem(
+            Icons.calendar_today,
+            'Dates',
+            date_utils.DateUtils.getDateRange(course.startDateTime!, course.endDateTime!),
+            theme,
           ),
-          const SizedBox(width: 4),
-          Text(
-            chipText,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: chipColor,
-              fontWeight: FontWeight.w500,
-            ),
+        
+        // Weeks
+        if (course.weeks != null)
+          _buildDetailGridItem(
+            Icons.repeat,
+            'Weeks',
+            course.weeks.toString(),
+            theme,
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAvailabilityStatus(ThemeData theme, bool isAvailable) {
-    return Row(
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: isAvailable 
-                ? theme.colorScheme.primary
-                : theme.colorScheme.outline,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          isAvailable ? 'Available' : 'Not Available',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: isAvailable 
-                ? theme.colorScheme.primary
-                : theme.colorScheme.outline,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCourseDetails(ThemeData theme) {
-    final details = <Widget>[];
-    
-    // Location (for studio courses)
-    if (course is StudioCourse) {
-      final studioCourse = course as StudioCourse;
-      final locationName = _getLocationDisplayName(studioCourse.location);
-      details.add(_buildDetailItem(
-        Icons.location_on,
-        locationName,
-        theme,
-      ));
-    }
-    
-    // Course Level
-    if (course.level != null) {
-      final levelName = _getLevelDisplayName(course.level!);
-      details.add(_buildDetailItem(
-        Icons.trending_up,
-        'Level: $levelName',
-        theme,
-      ));
-    }
-    
-    // Age Group (from attendance types)
-    if (course.attendanceTypes.isNotEmpty) {
-      final attendanceType = course.attendanceTypes.first;
-      final ageGroup = _getAttendanceTypeDisplayName(attendanceType);
-      details.add(_buildDetailItem(
-        Icons.people,
-        ageGroup,
-        theme,
-      ));
-    }
-    
-    if (details.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    
-    return Column(
-      children: details
-          .expand((widget) => [widget, const SizedBox(height: 4)])
-          .toList()
-        ..removeLast(), // Remove last spacer
-    );
-  }
-
-  Widget _buildDetailItem(IconData icon, String text, ThemeData theme) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 14,
-          color: theme.colorScheme.onSurface.withOpacity(0.6),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            text,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.7),
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPriceAndActions(ThemeData theme, bool isAvailable) {
-    return Row(
-      children: [
-        // Price
-        Expanded(
-          child: _buildPriceInfo(theme),
+        
+        // Level
+        _buildDetailGridItem(
+          Icons.star_outline,
+          'Level',
+          course.level != null ? TextUtils.formatLevel(course.level!.name) : 'All levels',
+          theme,
         ),
         
-        const SizedBox(width: 12),
-        
-        // Add to Basket Button
-        AddToBasketButton(
-          course: course,
-          onPressed: isAvailable ? onAddToBasket : null,
-          isEnabled: isAvailable,
+        // Age Group
+        _buildDetailGridItem(
+          Icons.people_outline,
+          'Age Group',
+          _getAgeGroupDisplay(),
+          theme,
         ),
       ],
     );
   }
 
-  Widget _buildPriceInfo(ThemeData theme) {
-    final price = course.price;
-    final isDiscounted = course.originalPrice != null && 
-                          course.originalPrice! > price;
-    
+  /// Build individual detail grid item
+  Widget _buildDetailGridItem(IconData icon, String label, String value, ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Current Price
-        Text(
-          MoneyFormatter.formatPenceWithFreeCheck(price),
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: MoneyFormatter.isFree(price)
-                ? theme.colorScheme.primary
-                : theme.colorScheme.onSurface,
-          ),
+        Row(
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
-        
-        // Original Price (if discounted)
-        if (isDiscounted) ...[
-          const SizedBox(height: 2),
-          Row(
-            children: [
-              Text(
-                MoneyFormatter.formatPence(course.originalPrice!),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  decoration: TextDecoration.lineThrough,
-                  color: theme.colorScheme.onSurface.withOpacity(0.5),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.errorContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'SALE',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onErrorContainer,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10,
-                  ),
-                ),
-              ),
-            ],
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.w600,
           ),
-        ],
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
       ],
     );
   }
 
-  /// Convert Location enum to display name
-  String _getLocationDisplayName(Location location) {
-    switch (location) {
-      case Location.online:
-        return 'Online';
-      case Location.studio1:
-        return 'Studio 1';
-      case Location.studio2:
-        return 'Studio 2';
-      case Location.external:
-        return 'External Venue';
-    }
+  /// Build price section and main add to basket button
+  Widget _buildPriceAndMainAction(ThemeData theme, bool isAvailable, bool isFullyBooked) {
+    final effectivePrice = course.currentPrice ?? course.price;
+    
+    return Column(
+      children: [
+        Text(
+          TextUtils.formatPrice(effectivePrice),
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 12),
+        
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: isAvailable && !isFullyBooked ? onAddToBasket : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: theme.colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              isFullyBooked 
+                  ? 'Fully booked' 
+                  : isAvailable 
+                      ? 'Add to basket'
+                      : 'Not Available',
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
-  /// Convert Level enum to display name
-  String _getLevelDisplayName(Level level) {
-    switch (level) {
-      case Level.beginner:
-        return 'Beginner';
-      case Level.intermediate:
-        return 'Intermediate';
-      case Level.advanced:
-        return 'Advanced';
-      case Level.kidsFoundation:
-        return 'Kids Foundation';
-      case Level.kids1:
-        return 'Kids Level 1';
-      case Level.kids2:
-        return 'Kids Level 2';
+  /// Build taster session section
+  Widget _buildTasterSessionSection() {
+    if (!course.hasTasterClasses || course.futureCourseSessions.isEmpty) {
+      return const SizedBox.shrink();
     }
+    
+    return TasterSessionDropdown(
+      futureSessions: course.futureCourseSessions,
+      tasterPrice: course.tasterPrice,
+      disabled: course.fullyBooked,
+      onBookTaster: () {
+        // TODO: Handle taster booking in Phase 3
+      },
+    );
   }
 
-  /// Convert AttendanceType enum to display name
-  String _getAttendanceTypeDisplayName(AttendanceType attendanceType) {
-    switch (attendanceType) {
-      case AttendanceType.children:
-        return 'Children';
-      case AttendanceType.adults:
-        return 'Adults';
-    }
+  /// Build deposit payment section
+  Widget _buildDepositPaymentSection() {
+    return DepositPaymentSection(
+      course: course,
+      disabled: course.fullyBooked,
+      onPayDeposit: () {
+        // TODO: Handle deposit payment in Phase 3
+      },
+    );
   }
-}
 
-/// Extension to capitalize first letter
-extension StringCapitalization on String {
-  String capitalize() {
-    if (isEmpty) return this;
-    return this[0].toUpperCase() + substring(1);
+  /// Check if taster sessions should be shown
+  bool _shouldShowTasterSessions() {
+    return course.hasTasterClasses && 
+           course.tasterPrice > 0 && 
+           course.futureCourseSessions.isNotEmpty;
   }
+
+  /// Check if deposit option should be shown
+  bool _shouldShowDepositOption() {
+    return course.isAcceptingDeposits && 
+           course.depositPrice != null && 
+           course.depositPrice! > 0;
+  }
+
+  /// Get age group display string
+  String _getAgeGroupDisplay() {
+    if (course.ageFrom != null && course.ageTo != null) {
+      return '${course.ageFrom}-${course.ageTo} years';
+    } else if (course.attendanceTypes.isNotEmpty) {
+      return TextUtils.formatAttendanceTypesList(
+        course.attendanceTypes.map((type) => type.name).toList()
+      );
+    }
+    return 'All ages';
+  }
+
 }

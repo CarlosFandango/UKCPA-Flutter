@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../domain/entities/course_group.dart';
 import '../../../../core/utils/money_formatter.dart';
+import '../../../../core/utils/text_utils.dart';
+import '../../../widgets/markdown_view.dart';
 
 /// Header widget for course group detail screen showing image, name, and key information
+/// Enhanced to support markdown descriptions matching website layout
 class CourseGroupHeader extends StatelessWidget {
   final CourseGroup courseGroup;
 
@@ -14,6 +17,12 @@ class CourseGroupHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Return multiple slivers to be used in CustomScrollView
+    return const SizedBox.shrink(); // This will be handled in the main screen
+  }
+
+  /// Build the hero image section as a sliver
+  Widget buildImageSliver(BuildContext context) {
     final theme = Theme.of(context);
     
     return SliverAppBar(
@@ -59,6 +68,67 @@ class CourseGroupHeader extends StatelessWidget {
               right: 16,
               bottom: 80, // Above the title
               child: _buildCourseGroupSummary(theme),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build the description section as a sliver
+  Widget buildDescriptionSliver(BuildContext context) {
+    if (courseGroup.description == null || courseGroup.description!.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    final theme = Theme.of(context);
+    
+    return SliverToBoxAdapter(
+      child: Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: theme.colorScheme.outline.withOpacity(0.2),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: theme.colorScheme.shadow.withOpacity(0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              courseGroup.name,
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            
+            if (courseGroup.shortDescription != null && courseGroup.shortDescription!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                courseGroup.shortDescription!,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.8),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+            
+            const SizedBox(height: 20),
+            
+            MarkdownViewExtensions.courseDescription(
+              markdown: courseGroup.description!,
+              theme: theme,
             ),
           ],
         ),
@@ -197,7 +267,7 @@ class CourseGroupHeader extends StatelessWidget {
     // Dance Type Badge
     if (courseGroup.danceType != null && courseGroup.danceType!.isNotEmpty) {
       badges.add(_buildBadge(
-        courseGroup.danceType!,
+        TextUtils.formatDanceType(courseGroup.danceType!),
         Icons.music_note,
         theme.colorScheme.primary,
         theme,
@@ -207,7 +277,7 @@ class CourseGroupHeader extends StatelessWidget {
     // Locations Badge
     if (courseGroup.locations.isNotEmpty) {
       final locationText = courseGroup.locations.length == 1
-          ? courseGroup.locations.first
+          ? TextUtils.formatLocationName(courseGroup.locations.first)
           : '${courseGroup.locations.length} locations';
       
       badges.add(_buildBadge(
@@ -220,23 +290,15 @@ class CourseGroupHeader extends StatelessWidget {
     
     // Course Types Badge
     if (courseGroup.courseTypes.isNotEmpty) {
-      final hasOnline = courseGroup.courseTypes.contains('OnlineCourse');
-      final hasStudio = courseGroup.courseTypes.contains('StudioCourse');
+      final typeText = TextUtils.formatCourseTypes(courseGroup.courseTypes);
       
-      String typeText;
       IconData typeIcon;
-      if (hasOnline && hasStudio) {
-        typeText = 'Online & Studio';
+      if (typeText.contains('Online') && typeText.contains('Studio')) {
         typeIcon = Icons.web;
-      } else if (hasOnline) {
-        typeText = 'Online';
+      } else if (typeText.contains('Online')) {
         typeIcon = Icons.computer;
-      } else if (hasStudio) {
-        typeText = 'Studio';
-        typeIcon = Icons.place;
       } else {
-        typeText = courseGroup.courseTypes.first;
-        typeIcon = Icons.class_;
+        typeIcon = Icons.place;
       }
       
       badges.add(_buildBadge(
@@ -249,9 +311,7 @@ class CourseGroupHeader extends StatelessWidget {
     
     // Attendance Types Badge
     if (courseGroup.attendanceTypes.isNotEmpty) {
-      final attendanceText = courseGroup.attendanceTypes.length == 1
-          ? courseGroup.attendanceTypes.first.toLowerCase().capitalize()
-          : 'All ages';
+      final attendanceText = TextUtils.formatAttendanceTypesList(courseGroup.attendanceTypes);
       
       badges.add(_buildBadge(
         attendanceText,
@@ -296,13 +356,5 @@ class CourseGroupHeader extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-/// Extension to capitalize first letter
-extension StringCapitalization on String {
-  String capitalize() {
-    if (isEmpty) return this;
-    return this[0].toUpperCase() + substring(1);
   }
 }

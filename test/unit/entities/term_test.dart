@@ -7,14 +7,14 @@ void main() {
     late Term testTerm;
     late DateTime startDate;
     late DateTime endDate;
-    late Holiday testHoliday;
+    late ClassClassHoliday testClassHoliday;
     late CourseGroup testCourseGroup;
 
     setUp(() {
       startDate = DateTime(2025, 1, 15);
       endDate = DateTime(2025, 4, 15);
       
-      testHoliday = Holiday(
+      testClassHoliday = ClassClassHoliday(
         name: 'Spring Break',
         startDateTime: DateTime(2025, 3, 1),
         endDateTime: DateTime(2025, 3, 8),
@@ -31,7 +31,7 @@ void main() {
         name: 'Spring 2025',
         startDate: startDate,
         endDate: endDate,
-        holidays: [testHoliday],
+        holidays: [testClassHoliday],
         courseGroups: [testCourseGroup],
       );
     });
@@ -121,9 +121,9 @@ void main() {
     });
   });
 
-  group('Holiday Entity', () {
+  group('ClassHoliday Entity', () {
     test('should create holiday with required fields', () {
-      final holiday = Holiday(
+      final holiday = ClassHoliday(
         name: 'Spring Break',
         startDateTime: DateTime(2025, 3, 1),
         endDateTime: DateTime(2025, 3, 8),
@@ -133,7 +133,7 @@ void main() {
     });
 
     test('durationInDays should calculate correctly', () {
-      final holiday = Holiday(
+      final holiday = ClassHoliday(
         name: 'Spring Break',
         startDateTime: DateTime(2025, 3, 1),
         endDateTime: DateTime(2025, 3, 8),
@@ -143,18 +143,18 @@ void main() {
     });
 
     test('should serialize to/from JSON', () {
-      final holiday = Holiday(
+      final holiday = ClassHoliday(
         name: 'Spring Break',
         startDateTime: DateTime(2025, 3, 1),
         endDateTime: DateTime(2025, 3, 8),
       );
 
       final json = holiday.toJson();
-      final deserializedHoliday = Holiday.fromJson(json);
+      final deserializedClassHoliday = ClassHoliday.fromJson(json);
 
-      expect(deserializedHoliday.name, equals(holiday.name));
-      expect(deserializedHoliday.startDateTime, equals(holiday.startDateTime));
-      expect(deserializedHoliday.endDateTime, equals(holiday.endDateTime));
+      expect(deserializedClassHoliday.name, equals(holiday.name));
+      expect(deserializedClassHoliday.startDateTime, equals(holiday.startDateTime));
+      expect(deserializedClassHoliday.endDateTime, equals(holiday.endDateTime));
     });
   });
 }

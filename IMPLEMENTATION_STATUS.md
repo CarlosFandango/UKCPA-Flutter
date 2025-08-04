@@ -132,6 +132,45 @@
 
 **Current Architecture**: Complete Terms → Course Groups → Courses data flow with full discovery UI
 
+### Slice 2.4: Course Group Detail Screen Enhancement
+- **Status**: ✅ Complete (2025-08-04)
+- **Effort**: 6 hours
+- **Enhancement**: Website Parity Implementation
+
+**New Components Created**:
+- `TasterSessionDropdown` - Interactive taster class selection matching website
+- `DepositPaymentSection` - Installment payment options with breakdown display
+- `CourseTypeBadge` - Online/Studio/Mixed badges with proper styling and colors
+- `MarkdownView` - Reusable markdown rendering with UKCPA styling
+- `DateUtils` - Comprehensive date formatting utilities (sessions, ranges, etc.)
+- `TextUtils` - Text formatting and display utilities (prices, names, etc.)
+
+**Enhanced Components**:
+- `CourseWithinGroupCard` - Complete redesign matching website course cards
+  - Image support with proper positioning
+  - Course details grid (time, dates, weeks, level, age)
+  - Taster session dropdown integration
+  - Deposit payment options integration
+  - Enhanced pricing display with discounts
+- `CourseGroupHeader` - Added markdown description support and improved layout
+- `CourseGroupDetailScreen` - Responsive grid layout and proper course sorting
+
+**Key Features Implemented**:
+- ✅ Markdown rendering for course group descriptions
+- ✅ Taster session dropdown with future course sessions
+- ✅ Deposit payment options with installment display
+- ✅ Enhanced course cards matching website design exactly
+- ✅ Improved date/time formatting (e.g., "Monday, 1 Jan at 10:00")
+- ✅ Course sorting by order field matching website behavior
+- ✅ Responsive layouts (1-3 columns based on screen size)
+- ✅ Course type badges (Online/Studio/Mixed)
+- ✅ Image positioning support using imagePosition X/Y values
+
+**Dependencies Added**:
+- `flutter_markdown: ^0.7.4` for markdown content rendering
+
+This enhancement brings the Flutter implementation to full parity with the website's course group functionality, ensuring users have all booking options and information they need.
+
 ## 📊 Quality Metrics
 
 - **Build Status**: ✅ Passing
@@ -169,27 +208,27 @@ Phase 1: Foundation & Authentication (100% Complete)
 ├── ✅ 1.5 Login & Registration UI
 └── ✅ 1.6 Router & Navigation Setup
 
-Phase 2: Course Discovery (60% Complete)
+Phase 2: Course Discovery (80% Complete)
 ├── ✅ 2.1 Term & Course Group Data Models
 ├── ✅ 2.2 Terms Repository with getTerms Query
 ├── ✅ 2.3 Course Group Discovery Screen
-├── 📋 2.4 Course Group Detail Screen
+├── ✅ 2.4 Course Group Detail Screen (Enhanced with website parity)
 └── 📋 2.5 Individual Course Detail Screen
 ```
 
 ## 🎯 Current Sprint Goals
 
-1. **Continue Phase 2** (Slice 2.4)
-   - Implement Course Group Detail Screen
-   - Add individual course display within groups
-   - Create course booking UI components
-   - Integrate with basket preparation for Phase 3
-
-2. **Complete Course Discovery Phase** (Slice 2.5)
-   - Individual course detail screens
-   - Video player integration
+1. **Complete Phase 2** (Slice 2.5)
+   - Individual course detail screens (optional deep-dive)
+   - Enhanced course information display
    - Session details and booking options
    - Navigation between course group and individual courses
+
+2. **Begin Phase 3** (Shopping & Basket)
+   - Basket data models and repository
+   - Basket state management with Riverpod
+   - Shopping cart UI implementation
+   - Integration with existing course booking
 
 3. **Testing & Quality** (Throughout)
    - Add widget tests for discovery screens
@@ -209,8 +248,10 @@ Phase 2: Course Discovery (60% Complete)
 ## 📝 Notes for Next Session
 
 - **Phase 1 Complete**: All foundation infrastructure fully implemented and tested
-- **Phase 2 Progress**: Course discovery now 60% complete with full UI implementation
-- **Discovery Screen**: Ready for testing with live data - just needs API_URL configuration
+- **Phase 2 Progress**: Course discovery now 80% complete with enhanced website parity
+- **Slice 2.4 Complete**: Course Group Detail Screen fully enhanced with all website features
+- **Website Parity**: Taster sessions, deposit payments, markdown descriptions, and responsive design
 - **Build Status**: All errors resolved, app builds and runs successfully
-- **Next Priority**: Slice 2.4 - Course Group Detail Screen implementation
-- **API Integration**: Course discovery ready for live GraphQL data from UKCPA server
+- **Next Priority**: Slice 2.5 - Individual Course Detail Screen (optional enhancement)
+- **Ready for Phase 3**: Shopping basket functionality can now be implemented
+- **API Integration**: Full course discovery flow ready for live GraphQL data from UKCPA server

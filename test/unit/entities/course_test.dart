@@ -21,8 +21,8 @@ void main() {
     });
 
     test('should create a course with all optional fields', () {
-      final courseGroup = CourseGroup(id: 'group1', name: 'Ballet Fundamentals');
-      final imagePosition = ImagePosition(x: 0.5, y: 0.3);
+      final courseGroup = CourseGroup(id: 1, name: 'Ballet Fundamentals');
+      final imagePosition = ImagePosition(X: 0.5, Y: 0.3);
       final address = Address(
         line1: '123 Dance Street',
         city: 'London',
