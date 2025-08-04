@@ -1,14 +1,6 @@
 /// GraphQL queries for Terms and CourseGroups
 /// Based on UKCPA-Website GraphQL schema
 
-/// Fragment for ClassHoliday data within Terms
-const String classHolidayFragment = '''
-  fragment ClassHolidayFragment on ClassHoliday {
-    name
-    startDateTime
-    endDateTime
-  }
-''';
 
 /// Fragment for Position data (used for image positioning)
 const String positionFragment = '''
@@ -18,12 +10,16 @@ const String positionFragment = '''
   }
 ''';
 
-/// Fragment for Studio Course data
+/// Fragment for Studio Course data - matches website exactly
 const String studioCourseFragment = '''
   fragment StudioCourseFragment on StudioCourse {
     id
     name
     subtitle
+    courseGroup {
+      id
+      name
+    }
     ageFrom
     ageTo
     active
@@ -55,12 +51,20 @@ const String studioCourseFragment = '''
       description
       url
       provider
-      thumbnailUrl
-      duration
     }
     hasTasterClasses
     tasterPrice
     isAcceptingDeposits
+    futureCourseSessions {
+      id
+      startDateTime
+      endDateTime
+    }
+    sessions {
+      id
+      startDateTime
+      endDateTime
+    }
     instructions
     address {
       line1
@@ -68,22 +72,20 @@ const String studioCourseFragment = '''
       postCode
       city
       county
-      country
     }
-    displayStatus
-    studioInstructions
-    equipment
-    parkingInfo
-    accessibilityInfo
   }
 ''';
 
-/// Fragment for Online Course data
+/// Fragment for Online Course data - matches website exactly
 const String onlineCourseFragment = '''
   fragment OnlineCourseFragment on OnlineCourse {
     id
     name
     subtitle
+    courseGroup {
+      id
+      name
+    }
     ageFrom
     ageTo
     active
@@ -107,31 +109,32 @@ const String onlineCourseFragment = '''
     order
     listStyle
     days
-    location
+    hasTasterClasses
+    isAcceptingDeposits
     danceType
+    location
+    tasterPrice
+    futureCourseSessions {
+      id
+      startDateTime
+      endDateTime
+    }
+    sessions {
+      id
+      startDateTime
+      endDateTime
+    }
     videos {
       id
       name
       description
       url
       provider
-      thumbnailUrl
-      duration
     }
-    hasTasterClasses
-    tasterPrice
-    isAcceptingDeposits
-    instructions
-    displayStatus
     zoomMeeting {
       meetingId
       password
-      joinUrl
     }
-    requiresEnrollment
-    technicalRequirements
-    platformInstructions
-    recordingUrls
   }
 ''';
 
@@ -175,7 +178,9 @@ const String termFragment = '''
     endDate
     startDate
     holidays {
-      ...ClassHolidayFragment
+      name
+      startDateTime
+      endDateTime
     }
     courseGroups {
       ...CourseGroupFragment
@@ -185,7 +190,6 @@ const String termFragment = '''
 
 /// Complete query for fetching terms - matches GetTerms exactly
 const String getTermsQuery = '''
-  $classHolidayFragment
   $positionFragment
   $studioCourseFragment
   $onlineCourseFragment
