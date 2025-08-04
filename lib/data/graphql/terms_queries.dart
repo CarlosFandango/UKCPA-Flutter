@@ -10,9 +10,9 @@ const String classHolidayFragment = '''
   }
 ''';
 
-/// Fragment for ImagePosition data
-const String imagePositionFragment = '''
-  fragment ImagePositionFragment on ImagePosition {
+/// Fragment for Position data (used for image positioning)
+const String positionFragment = '''
+  fragment PositionFragment on Position {
     X
     Y
   }
@@ -36,7 +36,7 @@ const String studioCourseFragment = '''
     thumbImage
     image
     imagePosition {
-      ...ImagePositionFragment
+      ...PositionFragment
     }
     shortDescription
     description
@@ -96,7 +96,7 @@ const String onlineCourseFragment = '''
     thumbImage
     image
     imagePosition {
-      ...ImagePositionFragment
+      ...PositionFragment
     }
     shortDescription
     description
@@ -143,7 +143,7 @@ const String courseGroupFragment = '''
     thumbImage
     image
     imagePosition {
-      ...ImagePositionFragment
+      ...PositionFragment
     }
     shortDescription
     description
@@ -186,7 +186,7 @@ const String termFragment = '''
 /// Complete query for fetching terms - matches GetTerms exactly
 const String getTermsQuery = '''
   $classHolidayFragment
-  $imagePositionFragment
+  $positionFragment
   $studioCourseFragment
   $onlineCourseFragment
   $courseGroupFragment
@@ -206,7 +206,7 @@ const String getTermsQuery = '''
 
 /// Query for fetching a specific course group - matches GetCourseGroup exactly
 const String getCourseGroupQuery = '''
-  $imagePositionFragment
+  $positionFragment
   $studioCourseFragment
   $onlineCourseFragment
   $courseGroupFragment
