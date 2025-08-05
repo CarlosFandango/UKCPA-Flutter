@@ -1,0 +1,578 @@
+name: Flutter Integration Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Which test suite to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - auth
+          - courses
+          - basket
+          - checkout
+          - e2e
+
+env:
+  FLUTTER_VERSION: '3.24.x'
+  NODE_VERSION: '18'
+
+jobs:
+  setup:
+    name: Setup Test Environment
+    runs-on: ubuntu-latest
+    outputs:
+      flutter-version: ${{ steps.flutter-setup.outputs.flutter-version }}
+      node-version: ${{ steps.node-setup.outputs.node-version }}
+    steps:
+      - name: 📋 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Flutter
+        id: flutter-setup
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Get Flutter dependencies
+        run: flutter pub get
+
+      - name: 🔧 Setup Node.js
+        id: node-setup
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          cache-dependency-path: '../UKCPA-Server/yarn.lock'
+
+      - name: 📦 Cache Flutter dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.pub-cache
+            build
+          key: flutter-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+
+  backend-setup:
+    name: Setup Backend Server
+    runs-on: ubuntu-latest
+    needs: setup
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: dancehub_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: 📋 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          cache-dependency-path: '../UKCPA-Server/yarn.lock'
+
+      - name: 📦 Install backend dependencies
+        run: |
+          cd ../UKCPA-Server
+          yarn install --frozen-lockfile
+
+      - name: 🗄️ Setup test database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dancehub_test
+          REDIS_URL: redis://localhost:6379
+        run: |
+          cd ../UKCPA-Server
+          yarn db:reset
+          yarn seed:run
+
+      - name: 🚀 Start backend server
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dancehub_test
+          REDIS_URL: redis://localhost:6379
+          PORT: 4000
+          NODE_ENV: test
+        run: |
+          cd ../UKCPA-Server
+          yarn start &
+          echo $! > backend.pid
+          
+          # Wait for server to be ready
+          for i in {1..30}; do
+            if curl -f http://localhost:4000/graphql; then
+              echo "Backend server is ready"
+              break
+            fi
+            echo "Waiting for backend server... ($i/30)"
+            sleep 2
+          done
+
+      - name: 🔍 Verify backend health
+        run: |
+          curl -f http://localhost:4000/graphql || exit 1
+          echo "Backend health check passed"
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [setup, backend-setup]
+    strategy:
+      fail-fast: false
+      matrix:
+        test-suite:
+          - { name: 'basic', file: 'basic_ui_test.dart', timeout: 5 }
+          - { name: 'auth', file: 'auth_flow_test.dart', timeout: 10 }
+          - { name: 'courses', file: 'course_discovery_flow_test.dart', timeout: 10 }
+          - { name: 'search', file: 'search_filter_test.dart', timeout: 8 }
+          - { name: 'course-detail', file: 'course_detail_navigation_test.dart', timeout: 8 }
+          - { name: 'basket', file: 'basket_flow_test.dart', timeout: 10 }
+          - { name: 'basket-mgmt', file: 'basket_management_test.dart', timeout: 8 }
+          - { name: 'checkout', file: 'checkout_flow_test.dart', timeout: 12 }
+          - { name: 'orders', file: 'order_completion_test.dart', timeout: 10 }
+          - { name: 'protected-routes', file: 'protected_route_test.dart', timeout: 8 }
+          - { name: 'cross-platform', file: 'cross_platform_test.dart', timeout: 10 }
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: dancehub_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: 📋 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Get Flutter dependencies
+        run: flutter pub get
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          cache-dependency-path: '../UKCPA-Server/yarn.lock'
+
+      - name: 📦 Install backend dependencies
+        run: |
+          cd ../UKCPA-Server
+          yarn install --frozen-lockfile
+
+      - name: 🗄️ Setup test database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dancehub_test
+          REDIS_URL: redis://localhost:6379
+        run: |
+          cd ../UKCPA-Server
+          yarn db:reset
+          yarn seed:run
+
+      - name: 🚀 Start backend server
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dancehub_test
+          REDIS_URL: redis://localhost:6379
+          PORT: 4000
+          NODE_ENV: test
+        run: |
+          cd ../UKCPA-Server
+          yarn start &
+          echo $! > backend.pid
+          
+          # Wait for server to be ready
+          for i in {1..30}; do
+            if curl -f http://localhost:4000/graphql; then
+              echo "Backend server is ready"
+              break
+            fi
+            echo "Waiting for backend server... ($i/30)"
+            sleep 2
+          done
+
+      - name: 🧪 Run ${{ matrix.test-suite.name }} integration tests
+        timeout-minutes: ${{ matrix.test-suite.timeout }}
+        run: |
+          # Create test results directory
+          mkdir -p test_results/reports test_results/screenshots
+          
+          # Run the specific test suite
+          flutter test integration_test/flows/${{ matrix.test-suite.file }} \
+            --dart-define=CI=true \
+            --dart-define=BACKEND_URL=http://localhost:4000 \
+            --reporter=expanded \
+            > test_results/${{ matrix.test-suite.name }}_output.log 2>&1 || true
+          
+          # Check if test passed or failed
+          if grep -q "All tests passed" test_results/${{ matrix.test-suite.name }}_output.log; then
+            echo "TEST_RESULT=passed" >> $GITHUB_ENV
+          else
+            echo "TEST_RESULT=failed" >> $GITHUB_ENV
+          fi
+          
+          # Always capture the log for analysis
+          echo "Test output captured in test_results/${{ matrix.test-suite.name }}_output.log"
+
+      - name: 📊 Generate test report
+        if: always()
+        run: |
+          echo "# Integration Test Report: ${{ matrix.test-suite.name }}" > test_results/${{ matrix.test-suite.name }}_report.md
+          echo "**Date:** $(date)" >> test_results/${{ matrix.test-suite.name }}_report.md
+          echo "**Test Suite:** ${{ matrix.test-suite.name }}" >> test_results/${{ matrix.test-suite.name }}_report.md
+          echo "**Status:** ${{ env.TEST_RESULT }}" >> test_results/${{ matrix.test-suite.name }}_report.md
+          echo "" >> test_results/${{ matrix.test-suite.name }}_report.md
+          echo "## Test Output" >> test_results/${{ matrix.test-suite.name }}_report.md
+          echo "\`\`\`" >> test_results/${{ matrix.test-suite.name }}_report.md
+          cat test_results/${{ matrix.test-suite.name }}_output.log >> test_results/${{ matrix.test-suite.name }}_report.md
+          echo "\`\`\`" >> test_results/${{ matrix.test-suite.name }}_report.md
+
+      - name: 📤 Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.test-suite.name }}
+          path: |
+            test_results/
+            screenshots/
+          retention-days: 30
+
+      - name: 💬 Comment on PR with test results
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const testSuite = '${{ matrix.test-suite.name }}';
+            const testResult = '${{ env.TEST_RESULT }}';
+            const emoji = testResult === 'passed' ? '✅' : '❌';
+            
+            const body = `${emoji} **Integration Test: ${testSuite}** - ${testResult}
+            
+            📊 [View detailed results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            📁 Test artifacts will be available for 30 days`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+      - name: ❌ Fail job if tests failed
+        if: env.TEST_RESULT == 'failed'
+        run: |
+          echo "Integration tests failed for ${{ matrix.test-suite.name }}"
+          exit 1
+
+  e2e-smoke-test:
+    name: E2E Smoke Test
+    runs-on: ubuntu-latest
+    needs: [setup, backend-setup]
+    if: github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'e2e' || github.event_name != 'workflow_dispatch'
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: dancehub_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: 📋 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Get Flutter dependencies
+        run: flutter pub get
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          cache-dependency-path: '../UKCPA-Server/yarn.lock'
+
+      - name: 📦 Install backend dependencies
+        run: |
+          cd ../UKCPA-Server
+          yarn install --frozen-lockfile
+
+      - name: 🗄️ Setup test database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dancehub_test
+          REDIS_URL: redis://localhost:6379
+        run: |
+          cd ../UKCPA-Server
+          yarn db:reset
+          yarn seed:run
+
+      - name: 🚀 Start backend server
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dancehub_test
+          REDIS_URL: redis://localhost:6379
+          PORT: 4000
+          NODE_ENV: test
+        run: |
+          cd ../UKCPA-Server
+          yarn start &
+          echo $! > backend.pid
+          
+          # Wait for server to be ready
+          for i in {1..30}; do
+            if curl -f http://localhost:4000/graphql; then
+              echo "Backend server is ready"
+              break
+            fi
+            echo "Waiting for backend server... ($i/30)"
+            sleep 2
+          done
+
+      - name: 🎯 Run E2E smoke test
+        timeout-minutes: 15
+        run: |
+          mkdir -p test_results/reports test_results/screenshots
+          
+          flutter test integration_test/flows/e2e_smoke_test.dart \
+            --dart-define=CI=true \
+            --dart-define=BACKEND_URL=http://localhost:4000 \
+            --reporter=expanded \
+            > test_results/e2e_smoke_output.log 2>&1 || true
+          
+          if grep -q "All tests passed" test_results/e2e_smoke_output.log; then
+            echo "E2E_RESULT=passed" >> $GITHUB_ENV
+          else
+            echo "E2E_RESULT=failed" >> $GITHUB_ENV
+          fi
+
+      - name: 📊 Generate E2E report
+        if: always()
+        run: |
+          echo "# E2E Smoke Test Report" > test_results/e2e_smoke_report.md
+          echo "**Date:** $(date)" >> test_results/e2e_smoke_report.md
+          echo "**Status:** ${{ env.E2E_RESULT }}" >> test_results/e2e_smoke_report.md
+          echo "" >> test_results/e2e_smoke_report.md
+          echo "## Full User Journey Test" >> test_results/e2e_smoke_report.md
+          echo "This test validates the complete user flow from registration to course booking." >> test_results/e2e_smoke_report.md
+          echo "" >> test_results/e2e_smoke_report.md
+          echo "## Test Output" >> test_results/e2e_smoke_report.md
+          echo "\`\`\`" >> test_results/e2e_smoke_report.md
+          cat test_results/e2e_smoke_output.log >> test_results/e2e_smoke_report.md
+          echo "\`\`\`" >> test_results/e2e_smoke_report.md
+
+      - name: 📤 Upload E2E artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-smoke-test-results
+          path: |
+            test_results/
+            screenshots/
+          retention-days: 30
+
+      - name: ❌ Fail E2E if tests failed
+        if: env.E2E_RESULT == 'failed'
+        run: |
+          echo "E2E smoke test failed"
+          exit 1
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [integration-tests, e2e-smoke-test]
+    if: always()
+
+    steps:
+      - name: 📋 Download all test artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all-test-results
+
+      - name: 📊 Generate comprehensive test report
+        run: |
+          echo "# 🧪 UKCPA Flutter Integration Test Suite Results" > test_summary.md
+          echo "" >> test_summary.md
+          echo "**Run ID:** ${{ github.run_id }}" >> test_summary.md
+          echo "**Date:** $(date)" >> test_summary.md
+          echo "**Commit:** ${{ github.sha }}" >> test_summary.md
+          echo "**Branch:** ${{ github.ref_name }}" >> test_summary.md
+          echo "" >> test_summary.md
+          
+          # Count results
+          total_tests=0
+          passed_tests=0
+          failed_tests=0
+          
+          echo "## 📋 Test Results Summary" >> test_summary.md
+          echo "" >> test_summary.md
+          echo "| Test Suite | Status | Details |" >> test_summary.md
+          echo "|------------|--------|---------|" >> test_summary.md
+          
+          # Process each test result
+          for result_dir in all-test-results/test-results-*; do
+            if [ -d "$result_dir" ]; then
+              test_name=$(basename "$result_dir" | sed 's/test-results-//')
+              total_tests=$((total_tests + 1))
+              
+              if [ -f "$result_dir/test_results/${test_name}_output.log" ]; then
+                if grep -q "All tests passed" "$result_dir/test_results/${test_name}_output.log"; then
+                  echo "| $test_name | ✅ Passed | [Log]($result_dir) |" >> test_summary.md
+                  passed_tests=$((passed_tests + 1))
+                else
+                  echo "| $test_name | ❌ Failed | [Log]($result_dir) |" >> test_summary.md
+                  failed_tests=$((failed_tests + 1))
+                fi
+              else
+                echo "| $test_name | ⚠️ No Results | [Artifacts]($result_dir) |" >> test_summary.md
+                failed_tests=$((failed_tests + 1))
+              fi
+            fi
+          done
+          
+          # Add E2E results
+          if [ -d "all-test-results/e2e-smoke-test-results" ]; then
+            total_tests=$((total_tests + 1))
+            if [ -f "all-test-results/e2e-smoke-test-results/test_results/e2e_smoke_output.log" ]; then
+              if grep -q "All tests passed" "all-test-results/e2e-smoke-test-results/test_results/e2e_smoke_output.log"; then
+                echo "| E2E Smoke Test | ✅ Passed | [Log](all-test-results/e2e-smoke-test-results) |" >> test_summary.md
+                passed_tests=$((passed_tests + 1))
+              else
+                echo "| E2E Smoke Test | ❌ Failed | [Log](all-test-results/e2e-smoke-test-results) |" >> test_summary.md
+                failed_tests=$((failed_tests + 1))
+              fi
+            fi
+          fi
+          
+          echo "" >> test_summary.md
+          echo "## 📊 Overall Statistics" >> test_summary.md
+          echo "" >> test_summary.md
+          echo "- **Total Tests:** $total_tests" >> test_summary.md
+          echo "- **Passed:** $passed_tests ✅" >> test_summary.md
+          echo "- **Failed:** $failed_tests ❌" >> test_summary.md
+          echo "- **Success Rate:** $((passed_tests * 100 / total_tests))%" >> test_summary.md
+          echo "" >> test_summary.md
+          
+          if [ $failed_tests -gt 0 ]; then
+            echo "## ⚠️ Failed Tests" >> test_summary.md
+            echo "" >> test_summary.md
+            echo "Some tests failed. Please check the individual test logs and artifacts for detailed failure analysis." >> test_summary.md
+            echo "" >> test_summary.md
+            echo "### 🔍 Debugging Steps" >> test_summary.md
+            echo "1. Download the test artifacts for failed tests" >> test_summary.md
+            echo "2. Check the detailed logs for error messages" >> test_summary.md
+            echo "3. Look for failure analysis reports in the artifacts" >> test_summary.md
+            echo "4. Review screenshots if available" >> test_summary.md
+          else
+            echo "## 🎉 All Tests Passed!" >> test_summary.md
+            echo "" >> test_summary.md
+            echo "Congratulations! All integration tests are passing successfully." >> test_summary.md
+          fi
+
+      - name: 📤 Upload comprehensive test summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-summary-report
+          path: test_summary.md
+          retention-days: 90
+
+      - name: 💬 Post summary to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('test_summary.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+
+  cleanup:
+    name: Cleanup
+    runs-on: ubuntu-latest
+    needs: [integration-tests, e2e-smoke-test, test-summary]
+    if: always()
+
+    steps:
+      - name: 🧹 Cleanup test environment
+        run: |
+          echo "Cleaning up test environment..."
+          # Kill any remaining backend processes
+          pkill -f "yarn start" || true
+          pkill -f "node" || true
+          echo "Cleanup completed"

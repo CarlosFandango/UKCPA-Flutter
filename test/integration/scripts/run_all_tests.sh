@@ -25,9 +25,16 @@ echo "================================================"
 # Navigate to project root
 cd "$(dirname "$0")/../../.."
 
-# Create results directory
-mkdir -p "$RESULTS_DIR"
-mkdir -p "$SCREENSHOT_DIR"
+# Create results directory with fallback locations for iOS simulator
+mkdir -p "$RESULTS_DIR" 2>/dev/null || true
+mkdir -p "$SCREENSHOT_DIR" 2>/dev/null || true
+
+# Create additional report directories (iOS simulator workaround)
+mkdir -p test_results/failure_reports 2>/dev/null || true
+mkdir -p reports 2>/dev/null || true
+mkdir -p test_reports 2>/dev/null || true
+
+echo -e "${GREEN}✅ Test directories prepared${NC}"
 
 # Function to check backend
 check_backend() {
@@ -197,11 +204,15 @@ main() {
     local test_files=(
         "integration_test/flows/basic_ui_test.dart"
         "integration_test/flows/auth_flow_test.dart"
+        "integration_test/flows/protected_route_test.dart"
         "integration_test/flows/course_discovery_flow_test.dart"
+        "integration_test/flows/search_filter_test.dart"
+        "integration_test/flows/course_detail_navigation_test.dart"
         "integration_test/flows/basket_flow_test.dart"
         "integration_test/flows/basket_management_test.dart"
         "integration_test/flows/checkout_flow_test.dart"
         "integration_test/flows/order_completion_test.dart"
+        "integration_test/flows/cross_platform_test.dart"
         "integration_test/flows/e2e_smoke_test.dart"
     )
     

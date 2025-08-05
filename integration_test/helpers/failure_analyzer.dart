@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// Creates detailed investigation reports for failed tests
 class FailureAnalyzer {
   static const String _failureReportsDir = 'test_results/failure_reports';
+  static String _actualReportsDir = '';
   static final List<TestFailure> _failures = [];
   static final Map<String, dynamic> _testContext = {};
 
@@ -17,17 +18,43 @@ class FailureAnalyzer {
     _testContext['platform'] = Platform.operatingSystem;
     _testContext['dart_version'] = Platform.version;
     
-    // Ensure reports directory exists
-    try {
-      final reportsDir = Directory(_failureReportsDir);
-      if (!reportsDir.existsSync()) {
-        reportsDir.createSync(recursive: true);
+    // Try multiple directory locations for reports (iOS simulator workaround)
+    _actualReportsDir = _ensureReportsDirectory();
+  }
+
+  /// Ensure reports directory exists with multiple fallback locations
+  static String _ensureReportsDirectory() {
+    final fallbackDirs = [
+      _failureReportsDir,                    // Primary: test_results/failure_reports
+      'test_results',                        // Fallback 1: test_results/ (usually works)
+      'reports',                             // Fallback 2: reports/
+      'test_reports',                        // Fallback 3: test_reports/
+      '.',                                   // Fallback 4: current directory
+    ];
+    
+    for (final dirPath in fallbackDirs) {
+      try {
+        final dir = Directory(dirPath);
+        if (!dir.existsSync()) {
+          dir.createSync(recursive: true);
+        }
+        
+        // Test write permissions by creating a temp file
+        final testFile = File('$dirPath/.write_test');
+        testFile.writeAsStringSync('test');
+        testFile.deleteSync();
+        
+        print('📁 Using reports directory: $dirPath');
+        return dirPath;
+      } catch (e) {
+        print('⚠️  Cannot use directory $dirPath: $e');
+        continue;
       }
-    } catch (e) {
-      // If we can't create the directory, try alternative location
-      print('Warning: Could not create test_results directory: $e');
-      print('Failure reports will be saved to current directory');
     }
+    
+    // This should never happen since current directory is the final fallback
+    print('❌ Could not create any reports directory');
+    return '.';
   }
 
   /// Record a test failure with context
@@ -64,25 +91,43 @@ class FailureAnalyzer {
     }
 
     final timestamp = DateTime.now();
-    var reportFile = '$_failureReportsDir/failure_analysis_${timestamp.millisecondsSinceEpoch}.md';
-    
     final report = _buildFailureReport(timestamp);
     
+    // Try to save to file first (works in most environments)
+    final reportFileName = 'failure_analysis_${timestamp.millisecondsSinceEpoch}.md';
+    final reportFile = '$_actualReportsDir/$reportFileName';
+    
+    bool fileSaved = false;
     try {
       await File(reportFile).writeAsString(report);
       print('📊 Failure analysis report generated: $reportFile');
       
       // Also create a latest report for easy access
-      await File('$_failureReportsDir/latest_failure_report.md').writeAsString(report);
+      final latestReportFile = '$_actualReportsDir/latest_failure_report.md';
+      await File(latestReportFile).writeAsString(report);
+      print('🔄 Latest report updated: $latestReportFile');
+      
+      print('📁 Reports saved in: $_actualReportsDir/');
+      fileSaved = true;
     } catch (e) {
-      // Fallback to current directory if we can't write to test_results
-      reportFile = 'failure_analysis_${timestamp.millisecondsSinceEpoch}.md';
-      await File(reportFile).writeAsString(report);
-      print('📊 Failure analysis report generated: $reportFile');
-      print('⚠️  Note: Saved to current directory due to file system restrictions');
+      // File system is read-only (iOS simulator) - output to stdout instead
+      print('⚠️  File system is read-only, outputting failure analysis to console:');
+      print('');
+      print('=' * 80);
+      print('FAILURE ANALYSIS REPORT - ${timestamp.toIso8601String()}');
+      print('=' * 80);
+      print(report);
+      print('=' * 80);
+      print('END FAILURE ANALYSIS REPORT');
+      print('=' * 80);
+      print('');
+      print('💡 Copy the analysis above to investigate and resolve test failures');
     }
     
     print('📋 Summary: ${_failures.length} failures analyzed');
+    if (!fileSaved) {
+      print('📄 Analysis output above contains all investigation details');
+    }
   }
 
   /// Build the comprehensive failure report
