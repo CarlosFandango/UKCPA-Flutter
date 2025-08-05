@@ -130,7 +130,7 @@ class CourseDiscoveryFlowTest extends BaseIntegrationTest with PerformanceTest {
         
         for (final size in screenSizes) {
           // Set screen size (if possible in test environment)
-          await tester.binding.setSurfaceSize(Size(size['width']!, size['height']!));
+          await tester.binding.setSurfaceSize(Size(size['width']!.toDouble(), size['height']!.toDouble()));
           await tester.pumpAndSettle();
           
           // Take screenshot for each size
