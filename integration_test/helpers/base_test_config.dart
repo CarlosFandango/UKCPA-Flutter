@@ -8,6 +8,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:ukcpa_flutter/main.dart';
 import '../fixtures/test_credentials.dart';
 import 'test_helpers.dart';
+import 'failure_analyzer.dart';
 
 /// Base configuration for all integration tests
 /// This reduces boilerplate and ensures consistent test setup
@@ -17,6 +18,9 @@ abstract class BaseIntegrationTest {
   /// Set up the test environment
   void setupTest() {
     binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+    
+    // Initialize failure tracking
+    FailureAnalyzer.initializeSession();
     
     // Configure test settings for optimal performance
     if (TestFeatureFlags.skipAnimations) {
@@ -81,15 +85,34 @@ abstract class BaseIntegrationTest {
       (WidgetTester tester) async {
         try {
           await test(tester);
-        } catch (e) {
+        } catch (e, stackTrace) {
           // Take a screenshot on failure
           await screenshot('error_${description.replaceAll(' ', '_')}');
+          
+          // Record failure for analysis
+          FailureAnalyzer.recordFailure(
+            testName: description,
+            testFile: StackTrace.current.toString().split('\n').first,
+            exception: e,
+            stackTrace: stackTrace,
+            additionalContext: {
+              'test_type': 'integration',
+              'platform': 'iOS',
+              'screenshot_taken': true,
+            },
+          );
+          
           rethrow;
         }
       },
       skip: skip,
       timeout: timeout ?? const Timeout(Duration(minutes: 2)),
     );
+  }
+  
+  /// Generate failure analysis report if there were any failures
+  Future<void> generateFailureAnalysisReport() async {
+    await FailureAnalyzer.generateFailureReport();
   }
 }
 

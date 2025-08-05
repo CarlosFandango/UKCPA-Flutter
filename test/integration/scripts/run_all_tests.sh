@@ -62,10 +62,92 @@ run_test() {
             else
                 echo -e "${RED}❌ $test_name failed after $MAX_RETRIES attempts${NC}"
                 echo "Check log: $RESULTS_DIR/${test_name}_output.log"
+                
+                # Generate failure analysis for this specific test
+                generate_failure_analysis "$test_file" "$test_name"
+                
                 return 1
             fi
         fi
     done
+}
+
+# Function to generate failure analysis for a specific test
+generate_failure_analysis() {
+    local test_file=$1
+    local test_name=$2
+    
+    echo -e "${BLUE}📊 Generating failure analysis for $test_name...${NC}"
+    
+    # Create a detailed failure report
+    cat > "$RESULTS_DIR/${test_name}_failure_analysis.md" << EOF
+# Failure Analysis: $test_name
+
+**Test File:** \`$test_file\`
+**Generated:** \$(date)
+**Status:** FAILED after $MAX_RETRIES attempts
+
+## Quick Investigation Steps
+
+### 1. Check Test Output
+\`\`\`bash
+cat $RESULTS_DIR/${test_name}_output.log
+\`\`\`
+
+### 2. Check Backend Status
+\`\`\`bash
+curl -s http://localhost:4000/graphql | jq .
+\`\`\`
+
+### 3. Run Individual Test
+\`\`\`bash
+flutter test $test_file --device-id="$DEVICE_ID" --dart-define=CI=false
+\`\`\`
+
+## Common Issues and Solutions
+
+### Backend Not Running
+- **Problem**: Connection refused to localhost:4000
+- **Solution**: \`cd UKCPA-Server && yarn start:dev\`
+
+### Missing UI Elements
+- **Problem**: "Found 0 widgets" errors
+- **Solution**: Add widget keys to UI components
+- **Example**: \`TextField(key: Key('email-field'))\`
+
+### Authentication Failures
+- **Problem**: Test user doesn't exist
+- **Solution**: Create test user in database:
+  \`\`\`sql
+  INSERT INTO users (email, password_hash, first_name, last_name) 
+  VALUES ('test@ukcpa.com', 'hashed_password', 'Test', 'User');
+  \`\`\`
+
+### Timeout Issues
+- **Problem**: Tests timing out
+- **Solution**: 
+  - Check system performance
+  - Increase timeout values
+  - Optimize slow operations
+
+## Next Steps
+
+1. **Review the detailed log**: \`$RESULTS_DIR/${test_name}_output.log\`
+2. **Check for screenshots**: Look in screenshots/ directory for error captures
+3. **Run test individually**: Use the command above to get more detailed output
+4. **Fix the root cause**: Address the specific issue found in the logs
+
+## Getting Help
+
+- **Test Infrastructure**: Check integration_test/README.md
+- **Backend Setup**: Check UKCPA-Server documentation
+- **UI Elements**: Review Flutter widget keys in the application code
+
+---
+*This analysis was generated automatically by the UKCPA integration test suite.*
+EOF
+
+    echo -e "${GREEN}📋 Failure analysis saved: $RESULTS_DIR/${test_name}_failure_analysis.md${NC}"
 }
 
 # Function to display test summary
@@ -86,6 +168,16 @@ display_summary() {
         echo -e "${GREEN}🎉 All tests passed!${NC}"
     else
         echo -e "${RED}⚠️  Some tests failed. Check logs in $RESULTS_DIR/${NC}"
+        echo ""
+        echo -e "${BLUE}📊 Failure Analysis Reports Generated:${NC}"
+        find "$RESULTS_DIR" -name "*_failure_analysis.md" -exec basename {} \; | while read report; do
+            echo -e "  📋 $report"
+        done
+        echo ""
+        echo -e "${YELLOW}💡 Quick Start Investigation:${NC}"
+        echo -e "  1. Check failure analysis reports above"
+        echo -e "  2. Review individual test logs in $RESULTS_DIR/"
+        echo -e "  3. Run: ./test/integration/scripts/run_screen_test.sh [test_name] for detailed debugging"
     fi
     echo "================================================"
 }

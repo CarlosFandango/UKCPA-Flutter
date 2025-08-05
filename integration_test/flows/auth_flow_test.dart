@@ -299,8 +299,9 @@ class AuthFlowTest extends BaseIntegrationTest with PerformanceTest {
       });
     });
 
-    tearDownAll(() {
+    tearDownAll(() async {
       printPerformanceReport();
+      await generateFailureAnalysisReport();
     });
   }
 }
