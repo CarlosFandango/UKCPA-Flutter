@@ -1,205 +1,205 @@
-# UKCPA Flutter - MCP Puppeteer Automation Flows
+# UKCPA Flutter - Integration Test Automation Flows
 
-This document contains predefined automation flows for testing and debugging the UKCPA Flutter app using Claude Code's MCP Puppeteer server.
+This document contains predefined automation flows for testing and debugging the UKCPA Flutter app using Flutter's integration testing framework.
 
-## Quick Reference Commands
+## Integration Test Commands
 
-### 1. Login Flow
-```javascript
-// Navigate to login
-await mcp__puppeteer__puppeteer_navigate({url: "http://localhost:59203/#/auth/login"});
-await mcp__puppeteer__puppeteer_screenshot({name: "login_page", width: 402, height: 878});
+### 1. Run Complete Smoke Tests
+```bash
+# Run comprehensive integration tests
+cd ukcpa_flutter
+./test/integration/scripts/run_smoke_tests.sh
 
-// Fill credentials
-await mcp__puppeteer__puppeteer_fill({selector: 'input[type="email"]', value: 'info@carl-stanley.com'});
-await mcp__puppeteer__puppeteer_fill({selector: 'input[type="password"]', value: 'password'});
-await mcp__puppeteer__puppeteer_screenshot({name: "credentials_filled", width: 402, height: 878});
+# Or run specific integration tests
+flutter test test/integration/tests/comprehensive_smoke_test.dart
 
-// Submit login
-await mcp__puppeteer__puppeteer_click({selector: 'button[type="submit"]'});
-await mcp__puppeteer__puppeteer_screenshot({name: "post_login", width: 402, height: 878});
+# Run with device (for real device testing)
+flutter test test/integration/tests/ -d chrome
+flutter test test/integration/tests/ -d macos
 ```
 
-### 2. Page Navigation Flow
-```javascript
-const pages = [
-  {name: "home", url: "/#/home"},
-  {name: "courses", url: "/#/courses"}, 
-  {name: "account", url: "/#/account"},
-  {name: "booking", url: "/#/booking"}
+### 2. Login Flow Testing (Flutter Integration Test Code)
+```dart
+// Start the app
+app.main();
+await tester.pumpAndSettle();
+
+// Find and fill email field
+await tester.enterText(find.byKey(const Key('email-field')), 'test@ukcpa.com');
+
+// Find and fill password field  
+await tester.enterText(find.byKey(const Key('password-field')), 'testpassword');
+
+// Tap login button
+await tester.tap(find.text('Sign In'));
+await tester.pumpAndSettle();
+
+// Take screenshot
+await binding.convertFlutterSurfaceToImage();
+```
+
+### 3. Responsive Design Testing
+```dart
+// Test different screen sizes
+final screenSizes = [
+  {'name': 'Mobile', 'size': const Size(375, 667)},
+  {'name': 'Tablet', 'size': const Size(768, 1024)},
+  {'name': 'Desktop', 'size': const Size(1200, 800)},
 ];
 
-// Visit each page and capture screenshot
-for (const page of pages) {
-  await mcp__puppeteer__puppeteer_navigate({url: `http://localhost:59203${page.url}`});
-  await mcp__puppeteer__puppeteer_screenshot({name: `page_${page.name}`, width: 1200, height: 800});
+for (final screen in screenSizes) {
+  // Set screen size
+  binding.window.physicalSizeTestValue = screen['size'] as Size;
+  await tester.pumpAndSettle();
+  
+  // Take screenshot
+  await binding.convertFlutterSurfaceToImage();
+  
+  // Test that UI elements are still visible
+  expect(find.byType(MaterialApp), findsOneWidget);
 }
 ```
 
-### 3. Form Validation Testing
-```javascript
+### 4. Form Validation Testing
+```dart
 // Test empty form submission
-await mcp__puppeteer__puppeteer_navigate({url: "http://localhost:59203/#/auth/login"});
-await mcp__puppeteer__puppeteer_click({selector: 'button[type="submit"]'});
-await mcp__puppeteer__puppeteer_screenshot({name: "empty_form_validation", width: 1200, height: 800});
+app.main();
+await tester.pumpAndSettle();
+
+// Try to submit without filling fields
+await tester.tap(find.text('Sign In'));
+await tester.pumpAndSettle();
+
+// Should still be on login screen
+expect(find.text('Welcome Back'), findsOneWidget);
 
 // Test invalid email
-await mcp__puppeteer__puppeteer_fill({selector: 'input[type="email"]', value: 'invalid-email'});
-await mcp__puppeteer__puppeteer_click({selector: 'button[type="submit"]'});
-await mcp__puppeteer__puppeteer_screenshot({name: "invalid_email_validation", width: 1200, height: 800});
+await tester.enterText(find.byKey(const Key('email-field')), 'invalid-email');
+await tester.tap(find.text('Sign In'));
+await tester.pumpAndSettle();
+
+// Should show validation error or stay on screen
+expect(find.text('Welcome Back'), findsOneWidget);
 ```
 
-### 4. Responsive Design Testing
-```javascript
-const viewports = [
-  {name: "desktop", width: 1200, height: 800},
-  {name: "tablet", width: 768, height: 1024},
-  {name: "mobile", width: 375, height: 667}
+### 5. Navigation Testing
+```dart
+// Test navigation between screens
+app.main();
+await tester.pumpAndSettle();
+
+// Navigate to different screens if available
+final navigationItems = [
+  find.text('Home'),
+  find.text('Courses'),
+  find.text('Account'),
+  find.byIcon(Icons.home),
+  find.byIcon(Icons.school),
 ];
 
-// Test login page across viewports
-for (const viewport of viewports) {
-  await mcp__puppeteer__puppeteer_navigate({url: "http://localhost:59203/#/auth/login"});
-  await mcp__puppeteer__puppeteer_screenshot({
-    name: `responsive_${viewport.name}_login`, 
-    width: viewport.width, 
-    height: viewport.height
-  });
+for (final item in navigationItems) {
+  if (item.evaluate().isNotEmpty) {
+    await tester.tap(item);
+    await tester.pumpAndSettle();
+    await binding.convertFlutterSurfaceToImage();
+  }
 }
 ```
 
-### 5. Accessibility Testing
-```javascript
-// Focus testing
-await mcp__puppeteer__puppeteer_navigate({url: "http://localhost:59203/#/auth/login"});
-await mcp__puppeteer__puppeteer_evaluate({
-  script: `
-    const firstFocusable = document.querySelector('input, button, a, [tabindex]:not([tabindex="-1"])');
-    if (firstFocusable) firstFocusable.focus();
-  `
-});
-await mcp__puppeteer__puppeteer_screenshot({name: "accessibility_focus", width: 1200, height: 800});
-```
+### 6. Performance Testing
+```dart
+// Measure app startup time
+final startTime = DateTime.now();
 
-### 6. Error Scenario Testing
-```javascript
-// Test 404 page
-await mcp__puppeteer__puppeteer_navigate({url: "http://localhost:59203/#/invalid-route"});
-await mcp__puppeteer__puppeteer_screenshot({name: "error_404", width: 1200, height: 800});
+app.main();
+await tester.pumpAndSettle();
 
-// Test invalid login
-await mcp__puppeteer__puppeteer_navigate({url: "http://localhost:59203/#/auth/login"});
-await mcp__puppeteer__puppeteer_fill({selector: 'input[type="email"]', value: 'invalid@test.com'});
-await mcp__puppeteer__puppeteer_fill({selector: 'input[type="password"]', value: 'wrongpassword'});
-await mcp__puppeteer__puppeteer_click({selector: 'button[type="submit"]'});
-await mcp__puppeteer__puppeteer_screenshot({name: "invalid_login_error", width: 1200, height: 800});
-```
+final loadTime = DateTime.now().difference(startTime).inMilliseconds;
+print('App loaded in ${loadTime}ms');
 
-## Common UI Testing Workflows
-
-### Complete Login-to-Dashboard Flow
-1. Navigate to login page
-2. Fill credentials
-3. Submit form
-4. Verify successful navigation
-5. Capture dashboard state
-6. Test main navigation
-
-### Form Validation Suite
-1. Test empty form submission
-2. Test invalid email formats
-3. Test weak passwords
-4. Test SQL injection attempts
-5. Verify error messages display correctly
-
-### Cross-Page Navigation Test
-1. Login successfully  
-2. Visit each main page
-3. Verify page loads correctly
-4. Check for JavaScript errors
-5. Validate responsive behavior
-
-### User Journey Testing
-1. New user registration flow
-2. Course browsing and selection
-3. Booking process
-4. Payment flow (if applicable)
-5. Account management
-
-## Debugging Commands
-
-### Capture Current State
-```javascript
-await mcp__puppeteer__puppeteer_screenshot({name: "current_state", width: 1200, height: 800});
-```
-
-### Check Console Errors
-```javascript
-await mcp__puppeteer__puppeteer_evaluate({
-  script: `
-    console.log('Current URL:', window.location.href);
-    console.log('Page Title:', document.title);
-    console.log('Errors in console:', window.errors || 'None captured');
-  `
-});
-```
-
-### Inspect Element Properties
-```javascript
-await mcp__puppeteer__puppeteer_evaluate({
-  script: `
-    const element = document.querySelector('input[type="email"]');
-    if (element) {
-      console.log('Element found:', {
-        value: element.value,
-        placeholder: element.placeholder,
-        disabled: element.disabled,
-        required: element.required
-      });
-    }
-  `
-});
-```
-
-## Configuration Variables
-
-Update these values based on your environment:
-
-```javascript
-const CONFIG = {
-  baseUrl: 'http://localhost:59203', // Your Flutter app URL
-  testCredentials: {
-    email: 'info@carl-stanley.cm',         // Test user email
-    password: 'password'       // Test user password
-  },
-  screenshots: {
-    width: 1200,
-    height: 800
+// Test rapid interactions
+for (int i = 0; i < 10; i++) {
+  final buttons = find.byType(ElevatedButton);
+  if (buttons.evaluate().isNotEmpty) {
+    await tester.tap(buttons.first);
+    await tester.pump(); // Single pump for immediate response
   }
-};
+}
 ```
 
-## Best Practices
+### 7. Real User Journey Testing
+```dart
+// Complete user flow test
+app.main();
+await tester.pumpAndSettle();
 
-1. **Always take screenshots** before and after interactions
-2. **Use descriptive names** for screenshots to track test progression
-3. **Test multiple viewport sizes** for responsive design validation
-4. **Include error scenarios** in your testing flows
-5. **Combine multiple commands** for comprehensive testing workflows
-6. **Use evaluation scripts** to inspect application state
-7. **Document your test flows** for team collaboration
+// Step 1: App launch
+await binding.convertFlutterSurfaceToImage(); // Screenshot: app_launch
 
-## Troubleshooting
+// Step 2: Login attempt
+await tester.enterText(find.byType(TextField).first, 'test@example.com');
+await binding.convertFlutterSurfaceToImage(); // Screenshot: email_entered
 
-### Common Issues:
-- **Element not found**: Use more specific selectors or wait for page load
-- **Navigation timeout**: Increase wait times between actions
-- **Screenshot timing**: Add delays before capturing screenshots
-- **Form submission**: Ensure all required fields are filled
+// Step 3: Password entry
+if (find.byType(TextField).evaluate().length > 1) {
+  await tester.enterText(find.byType(TextField).at(1), 'password');
+  await binding.convertFlutterSurfaceToImage(); // Screenshot: password_entered
+}
 
-### Debugging Steps:
-1. Take screenshot to see current state
-2. Use evaluate to check console errors
-3. Inspect element properties
-4. Verify page URL and navigation state
-5. Check network errors if applicable
+// Step 4: Submit form
+final submitButton = find.byType(ElevatedButton);
+if (submitButton.evaluate().isNotEmpty) {
+  await tester.tap(submitButton.first);
+  await tester.pumpAndSettle(const Duration(seconds: 2));
+  await binding.convertFlutterSurfaceToImage(); // Screenshot: form_submitted
+}
+
+// Step 5: Final state
+await binding.convertFlutterSurfaceToImage(); // Screenshot: final_state
+```
+
+## Test Configuration
+
+### Test Credentials
+- **Email**: `test@ukcpa.com`
+- **Password**: `testpassword`
+- **Alternative**: `info@carl-stanley.com` / `password`
+
+### Screenshot Configuration
+- Screenshots are automatically saved to `test/integration/results/screenshots/`
+- Each test step captures the current UI state
+- Multiple screen sizes tested for responsive design
+
+### Integration Test Best Practices
+
+1. **Use `pumpAndSettle()`** - Wait for animations to complete
+2. **Add delays for async operations** - `pumpAndSettle(Duration(seconds: 2))`
+3. **Use widget keys** - Add `Key('widget-name')` to important widgets
+4. **Test multiple strategies** - Use different finder methods as fallbacks
+5. **Capture screenshots** - Document the UI state at each step
+6. **Test error scenarios** - Empty forms, invalid input, network errors
+
+### Common Integration Test Issues
+
+1. **Widget not found** - Add proper keys to widgets in the app code
+2. **Async operations** - Use appropriate waiting strategies
+3. **State management** - Ensure providers are properly initialized
+4. **Navigation** - Test that routing works correctly
+5. **Form validation** - Verify error messages and behavior
+
+### Running Tests in Different Environments
+
+```bash
+# Desktop testing
+flutter test test/integration/tests/ -d chrome
+flutter test test/integration/tests/ -d macos
+
+# Mobile device testing (requires connected device)
+flutter test test/integration/tests/ -d android
+flutter test test/integration/tests/ -d ios
+
+# Specific test file
+flutter test test/integration/tests/comprehensive_smoke_test.dart -d chrome
+```
+
+This integration testing approach provides real UI validation with actual Flutter widget interactions, proper screenshot capture, and comprehensive user journey testing.

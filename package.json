@@ -1,0 +1,11 @@
+{
+  "name": "ukcpa-flutter-e2e-tests",
+  "version": "1.0.0",
+  "description": "E2E tests for UKCPA Flutter web app",
+  "scripts": {
+    "test:e2e": "node test/integration/scripts/puppeteer_e2e_test.js"
+  },
+  "devDependencies": {
+    "puppeteer": "^24.15.0"
+  }
+}
