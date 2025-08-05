@@ -18,9 +18,15 @@ class FailureAnalyzer {
     _testContext['dart_version'] = Platform.version;
     
     // Ensure reports directory exists
-    final reportsDir = Directory(_failureReportsDir);
-    if (!reportsDir.existsSync()) {
-      reportsDir.createSync(recursive: true);
+    try {
+      final reportsDir = Directory(_failureReportsDir);
+      if (!reportsDir.existsSync()) {
+        reportsDir.createSync(recursive: true);
+      }
+    } catch (e) {
+      // If we can't create the directory, try alternative location
+      print('Warning: Could not create test_results directory: $e');
+      print('Failure reports will be saved to current directory');
     }
   }
 
@@ -58,17 +64,25 @@ class FailureAnalyzer {
     }
 
     final timestamp = DateTime.now();
-    final reportFile = '$_failureReportsDir/failure_analysis_${timestamp.millisecondsSinceEpoch}.md';
+    var reportFile = '$_failureReportsDir/failure_analysis_${timestamp.millisecondsSinceEpoch}.md';
     
     final report = _buildFailureReport(timestamp);
     
-    await File(reportFile).writeAsString(report);
+    try {
+      await File(reportFile).writeAsString(report);
+      print('📊 Failure analysis report generated: $reportFile');
+      
+      // Also create a latest report for easy access
+      await File('$_failureReportsDir/latest_failure_report.md').writeAsString(report);
+    } catch (e) {
+      // Fallback to current directory if we can't write to test_results
+      reportFile = 'failure_analysis_${timestamp.millisecondsSinceEpoch}.md';
+      await File(reportFile).writeAsString(report);
+      print('📊 Failure analysis report generated: $reportFile');
+      print('⚠️  Note: Saved to current directory due to file system restrictions');
+    }
     
-    print('📊 Failure analysis report generated: $reportFile');
     print('📋 Summary: ${_failures.length} failures analyzed');
-    
-    // Also create a latest report for easy access
-    await File('$_failureReportsDir/latest_failure_report.md').writeAsString(report);
   }
 
   /// Build the comprehensive failure report
