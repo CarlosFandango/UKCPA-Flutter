@@ -27,6 +27,7 @@ class AppTextField extends StatefulWidget {
   final TextCapitalization textCapitalization;
   final FocusNode? focusNode;
   final EdgeInsetsGeometry? contentPadding;
+  final Key? textFieldKey;
 
   const AppTextField({
     super.key,
@@ -51,6 +52,7 @@ class AppTextField extends StatefulWidget {
     this.textCapitalization = TextCapitalization.none,
     this.focusNode,
     this.contentPadding,
+    this.textFieldKey,
   });
 
   @override
@@ -71,6 +73,7 @@ class _AppTextFieldState extends State<AppTextField> {
     final theme = Theme.of(context);
     
     return TextFormField(
+      key: widget.textFieldKey,
       controller: widget.controller,
       obscureText: widget.isPassword && _obscureText,
       keyboardType: _getKeyboardType(),
@@ -156,6 +159,7 @@ class _AppTextFieldState extends State<AppTextField> {
   Widget? _getSuffixIcon() {
     if (widget.isPassword) {
       return IconButton(
+        key: const Key('password-toggle'),
         icon: Icon(_obscureText ? Icons.visibility : Icons.visibility_off),
         onPressed: () {
           setState(() {

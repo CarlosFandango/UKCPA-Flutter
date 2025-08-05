@@ -82,7 +82,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        'Welcome Back',
+                        'Sign in to your account',
                         style: theme.textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: theme.colorScheme.onSurface,
@@ -110,6 +110,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   textInputAction: TextInputAction.next,
                   enabled: !_isLoading,
                   validator: FormValidators.validateEmail,
+                  textFieldKey: const Key('email-field'),
                 ),
                 
                 const SizedBox(height: 16),
@@ -124,6 +125,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   enabled: !_isLoading,
                   validator: FormValidators.validatePassword,
                   onEditingComplete: _isLoading ? null : _handleLogin,
+                  textFieldKey: const Key('password-field'),
                 ),
                 
                 const SizedBox(height: 24),
@@ -176,6 +178,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   text: 'Sign In',
                   onPressed: _handleLogin,
                   isLoading: _isLoading,
+                  buttonKey: const Key('login-submit-button'),
                 ),
                 
                 const SizedBox(height: 24),

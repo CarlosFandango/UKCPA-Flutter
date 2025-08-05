@@ -11,6 +11,7 @@ class PrimaryButton extends StatelessWidget {
   final double? width;
   final EdgeInsetsGeometry? padding;
   final ButtonStyle? style;
+  final Key? buttonKey;
 
   const PrimaryButton({
     super.key,
@@ -21,6 +22,7 @@ class PrimaryButton extends StatelessWidget {
     this.width,
     this.padding,
     this.style,
+    this.buttonKey,
   });
 
   @override
@@ -58,6 +60,7 @@ class PrimaryButton extends StatelessWidget {
     return SizedBox(
       width: width,
       child: FilledButton(
+        key: buttonKey,
         onPressed: isLoading ? null : onPressed,
         style: style ?? FilledButton.styleFrom(
           padding: padding ?? const EdgeInsets.symmetric(vertical: 16),
