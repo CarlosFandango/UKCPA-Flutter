@@ -435,17 +435,17 @@ SELECT id, email FROM users WHERE email = 'test@ukcpa.com';
 
 -- Create test user if missing
 INSERT INTO users (email, password_hash, first_name, last_name) 
-VALUES ('test@ukcpa.com', '$2b$10$hashed_password', 'Test', 'User');
+VALUES ('test@ukcpa.com', '\$2b\$10\$hashed_password', 'Test', 'User');
 ```
 
 #### 4. UI Investigation
 ```dart
 // Add debug prints to tests
-print('Widget tree: \${tester.binding.renderViewTree}');
+print('Widget tree: \\\${tester.binding.renderViewTree}');
 
 // Find actual widgets
 final allTexts = find.byType(Text);
-print('All texts found: \${allTexts.evaluate().length}');
+print('All texts found: \\\${allTexts.evaluate().length}');
 ```
 
 #### 5. Test Isolation
