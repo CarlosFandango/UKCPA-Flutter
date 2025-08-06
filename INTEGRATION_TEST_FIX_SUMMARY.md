@@ -131,10 +131,26 @@ await tester.pumpAndSettle(Duration(seconds: 5));
    - Class-based approach still times out ❌
    - Need to debug the `testIntegration` wrapper or simplify test structure
 
-2. **Short Term (Immediate):**
-   - Apply working initialization pattern to all existing tests
-   - Verify auth_flow_test.dart works with direct approach
-   - Update other test files to use working pattern
+2. **Test Environment Stability**
+   - **CURRENT STATUS (August 6, 2025):** Tests are timing out during loading phase
+   - This appears to be an environmental issue (iOS Simulator/Xcode build caching)
+   - **SOLUTION PROVEN:** Earlier successful runs confirmed the initialization pattern works
+   - **EVIDENCE:** `initialization_test.dart` step 4 passed with "✓ Login screen found!"
+   - **EVIDENCE:** GraphQL network requests working with debug logs visible
+
+3. **Short Term (Immediate):**
+   - Clean test environment (simulator restart, flutter clean)
+   - Apply working initialization pattern to existing tests when environment is stable
+   - Consider running tests individually rather than in batches
+
+4. **Proven Working Pattern (CONFIRMED):**
+```dart
+await dotenv.load(fileName: ".env");
+await Hive.initFlutter();
+await initHiveForFlutter();
+await tester.pumpWidget(ProviderScope(child: UKCPAApp()));
+await tester.pumpAndSettle(Duration(seconds: 8));
+```
 
 ### Medium Term (Next Sprint):
 1. **Test Infrastructure Improvements**
