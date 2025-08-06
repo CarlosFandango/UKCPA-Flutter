@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:ukcpa_flutter/main.dart';
+import 'package:ukcpa_flutter/domain/repositories/auth_repository.dart';
+import 'package:ukcpa_flutter/domain/entities/user.dart';
+import 'package:ukcpa_flutter/presentation/providers/auth_provider.dart';
 import 'automated_test_template.dart';
 import '../fixtures/test_credentials.dart';
 
@@ -15,11 +19,27 @@ class FastTestManager {
   static bool _userLoggedIn = false;
   static WidgetTester? _sharedTester;
   
-  /// Initialize app once and reuse across tests (FAST MODE)
+  /// Initialize app for each test with ULTRA-FAST mocked setup
   static Future<void> initializeOnce(WidgetTester tester) async {
     if (_appInitialized) {
-      print('⚡ Reusing existing app initialization');
+      print('⚡ Reinitializing app with MOCKED clean state (ultra-fast)');
+      
+      // Restart the app with mocked providers for clean, fast state
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            // Use mocked auth repository for speed
+            authRepositoryProvider.overrideWithValue(_mockAuthRepository),
+          ],
+          child: const UKCPAApp(),
+        ),
+      );
+      
+      // Minimal wait with mocked dependencies (no real network calls)
+      await tester.pumpAndSettle(const Duration(milliseconds: 300));
+      
       _sharedTester = tester;
+      print('⚡ Mocked app state ready in ultra-fast mode');
       return;
     }
     
@@ -29,17 +49,27 @@ class FastTestManager {
     // Load environment
     await dotenv.load(fileName: ".env");
     
-    // Initialize storage (only once)
+    // Clear any stored authentication data for clean test state first
+    const secureStorage = FlutterSecureStorage();
+    await secureStorage.deleteAll();
+    
+    // Initialize storage (only once) after clearing
     await Hive.initFlutter();
     await initHiveForFlutter();
     
-    // Pump app with minimal waiting
+    // Pump app with MOCKED providers for ultra-fast performance
     await tester.pumpWidget(
-      const ProviderScope(child: UKCPAApp()),
+      ProviderScope(
+        overrides: [
+          // Use mocked auth repository for speed  
+          authRepositoryProvider.overrideWithValue(_mockAuthRepository),
+        ],
+        child: const UKCPAApp(),
+      ),
     );
     
-    // Reduced wait time - only wait for essential initialization
-    await tester.pumpAndSettle(const Duration(seconds: 2)); // Was 8-10 seconds!
+    // Minimal wait with mocked dependencies (no real network calls)
+    await tester.pumpAndSettle(const Duration(milliseconds: 300)); // Ultra-fast!
     
     // Verify basic app state
     expect(find.byType(MaterialApp), findsAtLeastNWidgets(1));
@@ -241,3 +271,58 @@ class FastTestManager {
     print('🔄 Fast test manager reset');
   }
 }
+
+/// Mock Auth Repository for ultra-fast testing
+class _MockAuthRepository implements AuthRepository {
+  @override
+  Future<AuthResponse> login(String email, String password) async {
+    // Simulate instant login for valid credentials (ultra-fast)
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    if (email == TestCredentials.validEmail && password == TestCredentials.validPassword) {
+      return AuthResponse(
+        user: User(
+          id: '123',
+          email: email,
+          firstName: 'Test',
+          lastName: 'User',
+        ),
+        token: 'mock-jwt-token-12345',
+      );
+    }
+    
+    return AuthResponse(
+      errors: [FieldError(path: 'email', message: 'Invalid email or password')],
+    );
+  }
+  
+  @override
+  Future<User?> getCurrentUser() async {
+    await Future.delayed(const Duration(milliseconds: 50));
+    return null; // Start with no user for clean state
+  }
+  
+  @override
+  Future<void> logout() async {
+    await Future.delayed(const Duration(milliseconds: 50));
+  }
+  
+  @override
+  Future<void> saveAuthToken(String token) async {
+    await Future.delayed(const Duration(milliseconds: 10));
+  }
+  
+  @override
+  Future<String?> getAuthToken() async {
+    await Future.delayed(const Duration(milliseconds: 10));
+    return null;
+  }
+  
+  @override
+  Future<void> clearAuthToken() async {
+    await Future.delayed(const Duration(milliseconds: 10));
+  }
+}
+
+// Static instance for reuse
+final _mockAuthRepository = _MockAuthRepository();

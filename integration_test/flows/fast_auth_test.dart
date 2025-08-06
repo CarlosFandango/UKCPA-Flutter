@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import '../helpers/fast_test_manager.dart';
+import '../helpers/automated_test_template.dart';
 import '../fixtures/test_credentials.dart';
 
 /// Fast authentication tests - optimized for speed
@@ -21,8 +22,12 @@ void main() {
       },
 
       'should validate email format quickly': (tester) async {
-        await tester.enterText(find.byKey(const Key('email-field')), 'invalid-email');
-        await tester.tap(find.text('Sign In'));
+        await AutomatedTestTemplate.enterText(
+          tester,
+          key: const Key('email-field'),
+          text: 'invalid-email',
+        );
+        await AutomatedTestTemplate.tapButton(tester, 'Sign In');
         await tester.pump(const Duration(milliseconds: 500)); // Minimal wait
         
         // Should show validation error or stay on login
@@ -31,9 +36,17 @@ void main() {
       },
 
       'should require password quickly': (tester) async {
-        await tester.enterText(find.byKey(const Key('email-field')), TestCredentials.validEmail);
-        await tester.enterText(find.byKey(const Key('password-field')), ''); // Empty password
-        await tester.tap(find.text('Sign In'));
+        await AutomatedTestTemplate.enterText(
+          tester,
+          key: const Key('email-field'),
+          text: TestCredentials.validEmail,
+        );
+        await AutomatedTestTemplate.enterText(
+          tester,
+          key: const Key('password-field'),
+          text: '', // Empty password
+        );
+        await AutomatedTestTemplate.tapButton(tester, 'Sign In');
         await tester.pump(const Duration(milliseconds: 500)); // Minimal wait
         
         // Should stay on login screen
@@ -43,14 +56,30 @@ void main() {
 
       'should login successfully with valid credentials': (tester) async {
         // Clear fields first
-        await tester.enterText(find.byKey(const Key('email-field')), '');
-        await tester.enterText(find.byKey(const Key('password-field')), '');
+        await AutomatedTestTemplate.enterText(
+          tester,
+          key: const Key('email-field'),
+          text: '',
+        );
+        await AutomatedTestTemplate.enterText(
+          tester,
+          key: const Key('password-field'),
+          text: '',
+        );
         
         // Enter valid credentials
-        await tester.enterText(find.byKey(const Key('email-field')), TestCredentials.validEmail);
-        await tester.enterText(find.byKey(const Key('password-field')), TestCredentials.validPassword);
+        await AutomatedTestTemplate.enterText(
+          tester,
+          key: const Key('email-field'),
+          text: TestCredentials.validEmail,
+        );
+        await AutomatedTestTemplate.enterText(
+          tester,
+          key: const Key('password-field'),
+          text: TestCredentials.validPassword,
+        );
         
-        await tester.tap(find.text('Sign In'));
+        await AutomatedTestTemplate.tapButton(tester, 'Sign In');
         await tester.pumpAndSettle(const Duration(seconds: 3)); // Reduced from 8+ seconds
         
         // Should navigate away from login
@@ -86,7 +115,11 @@ void main() {
           return;
         }
         
-        await tester.enterText(find.byKey(const Key('password-field')), 'test123');
+        await AutomatedTestTemplate.enterText(
+          tester,
+          key: const Key('password-field'),
+          text: 'test123',
+        );
         
         // Look for password visibility toggle
         final visibilityToggle = find.byIcon(Icons.visibility_off);
