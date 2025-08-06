@@ -100,18 +100,41 @@ FilledButton(key: Key('login-submit-button'), ...)
 
 ---
 
-## 📋 Recommendations for Complete Resolution
+## 📋 Root Cause Resolution (August 6, 2025)
 
-### Short Term (Immediate):
-1. **Investigate Test Timeouts**
-   - Add more detailed logging to pinpoint where tests hang
-   - Check if form validation is blocking test execution
-   - Consider mocking network calls for UI-only tests
+### ✅ TIMEOUT ISSUE RESOLVED
+**Root Cause Found:** Tests were timing out because UKCPAApp requires proper initialization (dotenv + Hive + GraphQL) before being pumped in tests.
 
-2. **Simplify Failing Tests**
-   - Break complex tests into smaller units
-   - Test form validation separately from login flow
-   - Add intermediate assertions to identify failure points
+**Investigation Results:**
+- **Environment Test:** Isolated timeout to missing initialization steps
+- **Initialization Test:** Proved that `dotenv.load() + Hive.initFlutter() + initHiveForFlutter()` fixes the issue
+- **Fixed Auth Test:** Successfully ran complete auth flow with proper initialization
+
+**Working Pattern:**
+```dart
+await dotenv.load(fileName: ".env");
+await Hive.initFlutter();
+await initHiveForFlutter();
+await tester.pumpWidget(ProviderScope(child: UKCPAApp()));
+await tester.pumpAndSettle(Duration(seconds: 5));
+```
+
+**Verification Status:**
+- ✅ Login screen displays correctly with all required widget keys
+- ✅ GraphQL client connects and makes network requests successfully
+- ✅ Form elements (email, password, buttons) are accessible to tests
+- ✅ App initialization debug logs show proper startup sequence
+
+### Remaining Work:
+1. **BaseIntegrationTest Class Issue**
+   - Direct test approach works ✅
+   - Class-based approach still times out ❌
+   - Need to debug the `testIntegration` wrapper or simplify test structure
+
+2. **Short Term (Immediate):**
+   - Apply working initialization pattern to all existing tests
+   - Verify auth_flow_test.dart works with direct approach
+   - Update other test files to use working pattern
 
 ### Medium Term (Next Sprint):
 1. **Test Infrastructure Improvements**
