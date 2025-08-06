@@ -40,11 +40,11 @@ class AuthFlowTest extends BaseIntegrationTest with PerformanceTest {
           find.byKey(const Key('email-field')), 
           TestCredentials.malformedEmail,
         );
-        await tester.pump();
+        await tester.pumpAndSettle();
         
         // Try to submit
         await tester.tap(find.text('Sign In'));
-        await tester.pump();
+        await tester.pumpAndSettle();
         
         // Should show validation error
         expect(
@@ -67,11 +67,11 @@ class AuthFlowTest extends BaseIntegrationTest with PerformanceTest {
           find.byKey(const Key('email-field')), 
           TestCredentials.validEmail,
         );
-        await tester.pump();
+        await tester.pumpAndSettle();
         
         // Leave password empty and try to submit
         await tester.tap(find.text('Sign In'));
-        await tester.pump();
+        await tester.pumpAndSettle();
         
         // Should show validation error
         expect(
@@ -99,7 +99,7 @@ class AuthFlowTest extends BaseIntegrationTest with PerformanceTest {
           find.byKey(const Key('password-field')), 
           TestCredentials.invalidPassword,
         );
-        await tester.pump();
+        await tester.pumpAndSettle();
         
         // Submit
         await tester.tap(find.text('Sign In'));
@@ -138,7 +138,7 @@ class AuthFlowTest extends BaseIntegrationTest with PerformanceTest {
             find.byKey(const Key('password-field')), 
             TestCredentials.validPassword,
           );
-          await tester.pump();
+          await tester.pumpAndSettle();
           
           await screenshot('login_filled');
           
@@ -223,7 +223,7 @@ class AuthFlowTest extends BaseIntegrationTest with PerformanceTest {
           find.byKey(const Key('password-field')), 
           TestCredentials.validPassword,
         );
-        await tester.pump();
+        await tester.pumpAndSettle();
         
         // Find password visibility toggle using the key we added
         final visibilityToggle = find.byKey(const Key('password-toggle'));
@@ -233,13 +233,13 @@ class AuthFlowTest extends BaseIntegrationTest with PerformanceTest {
         
         // Toggle visibility
         await tester.tap(visibilityToggle);
-        await tester.pump();
+        await tester.pumpAndSettle();
         
         await screenshot('password_visible');
         
         // Toggle back
         await tester.tap(visibilityToggle);
-        await tester.pump();
+        await tester.pumpAndSettle();
         
         await screenshot('password_hidden');
       });

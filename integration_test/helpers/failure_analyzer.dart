@@ -249,7 +249,7 @@ class FailureAnalyzer {
     buffer.writeln('### Priority 2 (Important)');
     
     if (categories.containsKey('Authentication')) {
-      buffer.writeln('- [ ] **Create test user** in backend database with email: test@ukcpa.com');
+      buffer.writeln('- [ ] **Create test user** in backend database with email: test@ukcpa');
       buffer.writeln('- [ ] **Verify login mutation** works in GraphQL Playground');
       buffer.writeln('- [ ] **Check session management** configuration');
     }
@@ -431,7 +431,7 @@ This is expected in early development when test data isn't set up.
       case 'Network/Backend':
         buffer.writeln('1. **Start Backend**: Ensure UKCPA-Server is running: `cd UKCPA-Server && yarn start:dev`');
         buffer.writeln('2. **Check Port**: Verify backend is on port 4000 (not 3000)');
-        buffer.writeln('3. **Create Test User**: Add test user to database with email: test@ukcpa.com');
+        buffer.writeln('3. **Create Test User**: Add test user to database with email: test@ukcpa');
         buffer.writeln('4. **Verify GraphQL**: Test queries in GraphQL Playground at http://localhost:4000/graphql');
         break;
         
@@ -490,11 +490,11 @@ yarn start:dev
 #### 3. Database Investigation
 ```sql
 -- Check if test user exists
-SELECT id, email FROM users WHERE email = 'test@ukcpa.com';
+SELECT id, email FROM users WHERE email = 'test@ukcpa';
 
 -- Create test user if missing
 INSERT INTO users (email, password_hash, first_name, last_name) 
-VALUES ('test@ukcpa.com', '\$2b\$10\$hashed_password', 'Test', 'User');
+VALUES ('test@ukcpa', '\$2b\$10\$hashed_password', 'Test', 'User');
 ```
 
 #### 4. UI Investigation
@@ -620,7 +620,7 @@ print('All texts found: \\\${allTexts.evaluate().length}');
     
     buffer.writeln('**Test Configuration:**');
     buffer.writeln('- Backend URL: http://localhost:4000/graphql');
-    buffer.writeln('- Test User: test@ukcpa.com');
+    buffer.writeln('- Test User: test@ukcpa');
     buffer.writeln('- Device Target: iPhone 16 Pro');
     buffer.writeln('- CI Mode: ${_testContext['ci_mode'] ?? 'false'}');
     buffer.writeln('');
