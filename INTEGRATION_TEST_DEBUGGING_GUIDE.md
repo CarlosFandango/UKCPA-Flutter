@@ -10,10 +10,41 @@
 
 When integration tests fail, follow this systematic approach:
 
+### 0. **DEVICE SELECTION: Android First (DEFAULT)**
+
+**🚨 ALWAYS USE ANDROID EMULATOR AS DEFAULT FOR INTEGRATION TESTS:**
+
+```bash
+# Step 1: Check available devices
+flutter devices
+
+# Step 2: Look for Android emulator (usually emulator-5554)
+# If you see: "sdk gphone64 arm64 (mobile) • emulator-5554 • android-arm64"
+# That's your Android device!
+
+# Step 3: Run tests on Android (PREFERRED)
+./test/integration/scripts/run_integration_tests.sh -d emulator-5554 -f auth_flow_test -s
+
+# Alternative: Direct flutter test on Android
+flutter test integration_test/flows/auth_flow_test.dart -d emulator-5554 --verbose
+```
+
+**Why Android First:**
+- ✅ More realistic mobile testing environment
+- ✅ Better touch interaction testing
+- ✅ Proper mobile form factors and gestures
+- ✅ Tests actual mobile performance
+- ✅ Validates responsive design on mobile screens
+
+**Chrome/Web should only be used when:**
+- ❌ Android emulator is not available
+- ❌ Debugging web-specific issues
+- ❌ Quick smoke tests only
+
 ### 1. **Identify the Failure Phase**
 ```bash
-# Check where the test fails
-flutter test integration_test/flows/your_test.dart --verbose
+# Check where the test fails (ANDROID FIRST)
+flutter test integration_test/flows/your_test.dart -d emulator-5554 --verbose
 ```
 
 **Common Failure Phases:**

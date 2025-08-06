@@ -11,8 +11,8 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Default values
-DEVICE="00724C24-F12F-4CA6-A33E-8FD8714B05CA"
+# Default values - ANDROID FIRST
+DEVICE="emulator-5554"  # Default to Android emulator (was iOS simulator)
 TEST_FILE=""
 HEADLESS=false
 SCREENSHOTS=false
@@ -39,17 +39,22 @@ while [[ $# -gt 0 ]]; do
     --help)
       echo "Usage: $0 [options]"
       echo "Options:"
-      echo "  -d, --device <device>    Device to run tests on (default: chrome)"
+      echo "  -d, --device <device>    Device to run tests on (default: emulator-5554 - Android)"
       echo "  -f, --file <file>        Specific test file to run"
       echo "  -h, --headless          Run in headless mode"
       echo "  -s, --screenshots       Take screenshots during tests"
       echo "  --help                  Show this help message"
       echo ""
       echo "Examples:"
-      echo "  $0                      # Run all tests on Chrome"
-      echo "  $0 -d macos             # Run all tests on macOS"
-      echo "  $0 -f auth_flow_test    # Run specific test file"
-      echo "  $0 -h -s                # Run headless with screenshots"
+      echo "  $0                          # Run all tests on Android emulator (DEFAULT)"
+      echo "  $0 -d chrome                # Run all tests on Chrome (fallback)"
+      echo "  $0 -f auth_flow_test        # Run specific test file on Android"
+      echo "  $0 -d emulator-5554 -s      # Run on Android with screenshots"
+      echo ""
+      echo "Available devices (run 'flutter devices' to see current):"
+      echo "  emulator-5554               # Android emulator (PREFERRED)"
+      echo "  chrome                      # Chrome browser (fallback)"
+      echo "  macos                       # macOS desktop (development)"
       exit 0
       ;;
     *)
