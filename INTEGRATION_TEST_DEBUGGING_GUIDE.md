@@ -42,7 +42,7 @@ await tester.pumpWidget(ProviderScope(child: UKCPAApp()));
 ```bash
 # Ensure UKCPA-Server is running
 pgrep -f "UKCPA-Server.*dev"  # Should return a process ID
-curl http://localhost:3000/graphql  # Should return GraphQL playground
+curl http://localhost:4000/graphql  # Should return GraphQL playground
 ```
 
 ---
@@ -266,7 +266,7 @@ if (errors.evaluate().isNotEmpty) {
 pgrep -f "UKCPA-Server.*dev"
 
 # Test GraphQL endpoint
-curl -X POST http://localhost:3000/graphql \
+curl -X POST http://localhost:4000/graphql \
   -H "Content-Type: application/json" \
   -d '{"query": "query { __typename }"}'
 ```
@@ -520,10 +520,10 @@ void main() {
 Before running integration tests, verify:
 
 ### Backend Requirements
-- [ ] UKCPA-Server running on port 3000
+- [ ] UKCPA-Server running on port 4000
 - [ ] PostgreSQL running on port 5433
 - [ ] Test user exists in database (test@ukcpa / password123)
-- [ ] GraphQL playground accessible at http://localhost:3000/graphql
+- [ ] GraphQL playground accessible at http://localhost:4000/graphql
 
 ### Flutter Environment
 - [ ] .env file exists with required variables
@@ -547,7 +547,7 @@ else
 fi
 
 # Check GraphQL endpoint
-if curl -s http://localhost:3000/graphql > /dev/null; then
+if curl -s http://localhost:4000/graphql > /dev/null; then
   echo "✅ GraphQL endpoint accessible"
 else
   echo "❌ GraphQL endpoint not accessible"

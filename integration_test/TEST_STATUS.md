@@ -177,7 +177,7 @@ All tests include performance measurement:
 flutter test integration_test/flows/auth_flow_test.dart -d chrome --verbose
 
 # Check backend health
-curl http://localhost:3000/graphql
+curl http://localhost:4000/graphql
 
 # View test logs
 tail -f backend-test.log

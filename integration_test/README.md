@@ -115,7 +115,7 @@ Tests can be run in CI environments:
 ## Troubleshooting
 
 ### Backend Connection Issues
-- Ensure backend is running on http://localhost:3000
+- Ensure backend is running on http://localhost:4000
 - Check GraphQL endpoint is accessible
 - Verify test database is set up
 

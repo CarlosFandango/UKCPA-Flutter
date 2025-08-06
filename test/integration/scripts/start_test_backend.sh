@@ -62,7 +62,7 @@ ALLOW_MUTATIONS=true
 # CORS Origins
 WEBSITE_ORIGIN=http://localhost:3050
 EVENTS_ORIGIN=http://localhost:3075
-CHILD_ORIGIN=http://localhost:3000
+CHILD_ORIGIN=http://localhost:4000
 FLUTTER_ORIGIN=http://localhost:*
 
 # Test Mode
