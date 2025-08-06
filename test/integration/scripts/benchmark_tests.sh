@@ -16,6 +16,9 @@ echo "=================================================="
 TESTS=(
   "fast_auth_test"
   "fast_course_discovery_test"
+  "auth_flow_test"
+  "course_discovery_test" 
+  "course_details_test"
 )
 
 DEVICE="emulator-5554"

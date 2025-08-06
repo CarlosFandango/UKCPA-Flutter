@@ -66,8 +66,12 @@ if [ -n "$TEST_FILE" ]; then
   fi
 else
   echo -e "${RED}❌ Please specify a test file with -f${NC}"
-  echo "Available tests:"
-  ls integration_test/flows/*.dart | sed 's/.*\///g' | sed 's/\.dart//g' | sed 's/^/  - /'
+  echo "Available fast tests:"
+  echo "  - fast_auth_test"
+  echo "  - fast_course_discovery_test"
+  echo "  - auth_flow_test (optimized)"
+  echo "  - course_discovery_test (optimized)"
+  echo "  - course_details_test (optimized)"
   exit 1
 fi
 
