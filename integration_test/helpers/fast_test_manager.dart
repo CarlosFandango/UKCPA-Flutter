@@ -1,0 +1,243 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:graphql_flutter/graphql_flutter.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:ukcpa_flutter/main.dart';
+import 'automated_test_template.dart';
+import '../fixtures/test_credentials.dart';
+
+/// High-performance test manager for fast integration tests
+/// Shares app initialization and authentication across multiple tests
+class FastTestManager {
+  static bool _appInitialized = false;
+  static bool _userLoggedIn = false;
+  static WidgetTester? _sharedTester;
+  
+  /// Initialize app once and reuse across tests (FAST MODE)
+  static Future<void> initializeOnce(WidgetTester tester) async {
+    if (_appInitialized) {
+      print('⚡ Reusing existing app initialization');
+      _sharedTester = tester;
+      return;
+    }
+    
+    print('🚀 Fast initialization starting...');
+    final startTime = DateTime.now();
+    
+    // Load environment
+    await dotenv.load(fileName: ".env");
+    
+    // Initialize storage (only once)
+    await Hive.initFlutter();
+    await initHiveForFlutter();
+    
+    // Pump app with minimal waiting
+    await tester.pumpWidget(
+      const ProviderScope(child: UKCPAApp()),
+    );
+    
+    // Reduced wait time - only wait for essential initialization
+    await tester.pumpAndSettle(const Duration(seconds: 2)); // Was 8-10 seconds!
+    
+    // Verify basic app state
+    expect(find.byType(MaterialApp), findsAtLeastNWidgets(1));
+    
+    _appInitialized = true;
+    _sharedTester = tester;
+    
+    final duration = DateTime.now().difference(startTime);
+    print('⚡ Fast initialization completed in ${duration.inMilliseconds}ms');
+  }
+  
+  /// Ensure user is logged in (shared across tests)
+  static Future<void> ensureLoggedIn(WidgetTester tester) async {
+    if (_userLoggedIn && _sharedTester == tester) {
+      print('⚡ User already logged in, skipping auth');
+      return;
+    }
+    
+    // Check if already on a logged-in screen
+    if (find.text('Sign in to your account').evaluate().isEmpty) {
+      print('⚡ Already logged in based on UI state');
+      _userLoggedIn = true;
+      return;
+    }
+    
+    print('🔐 Performing fast login...');
+    final startTime = DateTime.now();
+    
+    // Fast login process
+    await AutomatedTestTemplate.enterText(
+      tester,
+      key: const Key('email-field'),
+      text: TestCredentials.validEmail,
+    );
+    
+    await AutomatedTestTemplate.enterText(
+      tester,
+      key: const Key('password-field'),
+      text: TestCredentials.validPassword,
+    );
+    
+    await AutomatedTestTemplate.tapButton(tester, 'Sign In');
+    
+    // Reduced wait for login - only wait for navigation
+    await tester.pumpAndSettle(const Duration(seconds: 3)); // Was 8+ seconds
+    
+    // Verify login success
+    if (find.text('Sign in to your account').evaluate().isEmpty) {
+      _userLoggedIn = true;
+      final duration = DateTime.now().difference(startTime);
+      print('⚡ Fast login completed in ${duration.inMilliseconds}ms');
+    } else {
+      throw Exception('Fast login failed - still on login screen');
+    }
+  }
+  
+  /// Navigate to specific screen quickly
+  static Future<void> navigateToScreen(
+    WidgetTester tester, 
+    String screenName, {
+    Duration timeout = const Duration(seconds: 2),
+  }) async {
+    print('🧭 Fast navigation to $screenName');
+    
+    switch (screenName.toLowerCase()) {
+      case 'courses':
+      case 'course_discovery':
+        final coursesTab = find.text('Courses');
+        if (coursesTab.evaluate().isNotEmpty) {
+          await tester.tap(coursesTab);
+          await tester.pumpAndSettle(timeout);
+        }
+        break;
+      case 'home':
+        final homeTab = find.text('Home');
+        if (homeTab.evaluate().isNotEmpty) {
+          await tester.tap(homeTab);
+          await tester.pumpAndSettle(timeout);
+        }
+        break;
+      case 'basket':
+        final basketTab = find.text('Basket');
+        if (basketTab.evaluate().isNotEmpty) {
+          await tester.tap(basketTab);
+          await tester.pumpAndSettle(timeout);
+        }
+        break;
+    }
+  }
+  
+  /// Reset only necessary state between tests (not full app reinit)
+  static Future<void> resetForNextTest(WidgetTester tester) async {
+    if (!_appInitialized) return;
+    
+    print('🔄 Quick reset between tests');
+    
+    // Navigate back to home if not there
+    if (find.text('Home').evaluate().isNotEmpty) {
+      await tester.tap(find.text('Home'));
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+    
+    // Clear any modal dialogs
+    final backButtons = find.byIcon(Icons.arrow_back);
+    if (backButtons.evaluate().isNotEmpty) {
+      await tester.tap(backButtons.first);
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+  }
+  
+  /// Create fast test wrapper
+  static void createFastTest(
+    String description,
+    Future<void> Function(WidgetTester tester) testFunction, {
+    bool requiresAuth = true,
+    String? navigateTo,
+    Duration? timeout,
+  }) {
+    testWidgets(description, (WidgetTester tester) async {
+      final testStartTime = DateTime.now();
+      
+      try {
+        // Fast initialization (shared across tests)
+        await initializeOnce(tester);
+        
+        // Fast authentication (shared if already done)
+        if (requiresAuth) {
+          await ensureLoggedIn(tester);
+        }
+        
+        // Fast navigation if requested
+        if (navigateTo != null) {
+          await navigateToScreen(tester, navigateTo);
+        }
+        
+        // Run the actual test
+        await testFunction(tester);
+        
+        // Quick reset for next test
+        await resetForNextTest(tester);
+        
+        final testDuration = DateTime.now().difference(testStartTime);
+        print('⚡ Test "$description" completed in ${testDuration.inMilliseconds}ms');
+        
+      } catch (e, stackTrace) {
+        final testDuration = DateTime.now().difference(testStartTime);
+        print('❌ Test "$description" failed after ${testDuration.inMilliseconds}ms');
+        print('Error: $e');
+        rethrow;
+      }
+    }, timeout: Timeout(timeout ?? const Duration(minutes: 2))); // Reduced timeout
+  }
+  
+  /// Batch multiple tests in one session for maximum speed
+  static void createFastTestBatch(
+    String groupName,
+    Map<String, Future<void> Function(WidgetTester tester)> tests, {
+    bool requiresAuth = true,
+  }) {
+    group(groupName, () {
+      late WidgetTester sharedTester;
+      
+      setUpAll(() async {
+        // This runs once for the entire group
+        print('🚀 Setting up fast test batch: $groupName');
+      });
+      
+      tearDownAll(() async {
+        print('🏁 Tearing down fast test batch: $groupName');
+        _appInitialized = false;
+        _userLoggedIn = false;
+        _sharedTester = null;
+      });
+      
+      for (final entry in tests.entries) {
+        createFastTest(
+          entry.key,
+          entry.value,
+          requiresAuth: requiresAuth,
+          timeout: const Duration(minutes: 1), // Aggressive timeout
+        );
+      }
+    });
+  }
+  
+  /// Performance monitoring
+  static void logPerformanceStats() {
+    print('📊 Fast Test Manager Stats:');
+    print('  - App initialized: $_appInitialized');
+    print('  - User logged in: $_userLoggedIn');
+    print('  - Shared state active: ${_sharedTester != null}');
+  }
+  
+  /// Reset all state (use sparingly)
+  static void forceReset() {
+    _appInitialized = false;
+    _userLoggedIn = false;
+    _sharedTester = null;
+    print('🔄 Fast test manager reset');
+  }
+}

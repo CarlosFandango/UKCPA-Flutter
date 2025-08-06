@@ -48,6 +48,17 @@ app.*.map.json
 # Environment files
 .env
 .env.local
+
+# Integration test artifacts
+integration_test/screenshots/
+integration_test/reports/
+integration_test/.test_cache/
+*.test.log
+
+# Temporary test files
+test/tmp/
+test/.tmp/
+*_test_output/
 .env.production
 
 # Generated files
