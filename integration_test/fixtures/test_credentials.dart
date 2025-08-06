@@ -1,8 +1,8 @@
 /// Test credentials and configuration for integration tests
 class TestCredentials {
   // Valid test user credentials
-  static const String validEmail = 'test@ukcpa.com';
-  static const String validPassword = 'testpassword';
+  static const String validEmail = 'test@ukcpa';
+  static const String validPassword = 'password123';
   static const String validFirstName = 'Test';
   static const String validLastName = 'User';
   static const String validPhone = '+44 7700 900123';
