@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import '../helpers/mock_fast_test_manager.dart';
 import '../helpers/automated_test_template.dart';
+import '../mocks/mock_data_factory.dart';
 
 /// UX/UI Review Test for Course Group List Page
 /// This test identifies and documents UX/UI issues that need fixing
@@ -13,8 +14,11 @@ void main() {
     testWidgets('🔍 Review 1: Page Load and Initial State', (WidgetTester tester) async {
       print('\n📋 STARTING UX/UI REVIEW: Course Group List Page\n');
       
-      // Initialize app with mocked auth
+      // Initialize app with centralized mocks and realistic data
       await MockedFastTestManager.initializeMocked(tester);
+      
+      // Let app fully load with mock data
+      await tester.pumpAndSettle(const Duration(milliseconds: 1000));
       
       // Log page information
       await AutomatedTestTemplate.logPageInfo(tester, 'Course Group List Page');
@@ -45,7 +49,7 @@ void main() {
       // Wait for content to load
       await tester.pumpAndSettle(const Duration(seconds: 2));
       
-      // Check what screen we're on
+      // Check what screen we're on and look for our mock data
       print('\n📍 CURRENT SCREEN:');
       final screenIndicators = {
         'Login': find.text('Sign in to your account'),
@@ -53,6 +57,9 @@ void main() {
         'Courses': find.text('Browse Courses'),
         'Course Groups': find.text('Course Groups'),
         'Terms': find.textContaining('Term'),
+        // Look for our mock course data
+        'Course Data': find.textContaining('Ballet Beginners'),
+        'Term Data': find.textContaining('Spring Term'),
       };
       
       String currentScreen = 'Unknown';
@@ -64,31 +71,47 @@ void main() {
         }
       }
       
-      // Navigate to Course Groups if needed
-      if (currentScreen != 'Course Groups') {
+      // Navigate to Course Groups if needed or look for course data
+      if (currentScreen == 'Course Data' || currentScreen == 'Term Data') {
+        print('✅ Already on page with course data - proceeding with UX review');
+      } else if (currentScreen != 'Course Groups') {
         print('\n🧭 NAVIGATION ATTEMPT:');
         
+        // Enhanced navigation elements including mock data indicators
         final navElements = [
           find.text('Courses'),
           find.text('Browse Courses'),
           find.text('Course Groups'),
+          find.textContaining('Term'),
+          find.textContaining('Spring Term'),
           find.byIcon(Icons.school),
           find.byIcon(Icons.list),
+          find.byIcon(Icons.event),
         ];
         
         bool navigated = false;
         for (final nav in navElements) {
           if (nav.evaluate().isNotEmpty) {
-            await tester.tap(nav);
-            await tester.pumpAndSettle(const Duration(seconds: 1));
-            navigated = true;
-            print('✅ Navigated using: ${nav.description}');
-            break;
+            try {
+              await tester.tap(nav.first);
+              await tester.pumpAndSettle(const Duration(seconds: 1));
+              
+              // Check if we now see course data
+              if (find.textContaining('Ballet Beginners').evaluate().isNotEmpty ||
+                  find.textContaining('Spring Term').evaluate().isNotEmpty) {
+                navigated = true;
+                print('✅ Successfully navigated to course data via: ${nav.description}');
+                break;
+              }
+            } catch (e) {
+              print('⚠️  Navigation attempt failed: ${nav.description} - $e');
+            }
           }
         }
         
         if (!navigated) {
           print('❌ ISSUE: Cannot navigate to Course Groups page');
+          print('💡 Will proceed with UX review of current screen');
         }
       }
       

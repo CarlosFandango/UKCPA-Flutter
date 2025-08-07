@@ -5,77 +5,23 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:mockito/mockito.dart';
 import 'package:ukcpa_flutter/main.dart';
-import 'package:ukcpa_flutter/domain/repositories/auth_repository.dart';
-import 'package:ukcpa_flutter/domain/entities/user.dart';
 import 'package:ukcpa_flutter/presentation/providers/auth_provider.dart';
+import 'package:ukcpa_flutter/presentation/providers/terms_provider.dart';
+import 'package:ukcpa_flutter/data/repositories/terms_repository_impl.dart';
+import '../mocks/mock_repositories.dart';
+import '../mocks/mock_data_factory.dart';
 import 'automated_test_template.dart';
-import '../fixtures/test_credentials.dart';
 
-/// Mock Auth Repository for super-fast testing
-class MockAuthRepository extends Mock implements AuthRepository {
-  @override
-  Future<AuthResponse> login(String email, String password) async {
-    // Simulate instant login for valid credentials
-    await Future.delayed(const Duration(milliseconds: 100)); // Minimal delay
-    
-    if (email == TestCredentials.validEmail && password == TestCredentials.validPassword) {
-      return AuthResponse(
-        user: User(
-          id: '123',
-          email: email,
-          firstName: 'Test',
-          lastName: 'User',
-        ),
-        token: 'mock-jwt-token-12345',
-      );
-    }
-    
-    // Return error for invalid credentials
-    return AuthResponse(
-      errors: [FieldError(path: 'email', message: 'Invalid email or password')],
-    );
-  }
-  
-  @override
-  Future<User?> getCurrentUser() async {
-    // Return a mocked authenticated user so we can test post-login screens
-    await Future.delayed(const Duration(milliseconds: 50));
-    return User(
-      id: '123',
-      email: TestCredentials.validEmail,
-      firstName: 'Test',
-      lastName: 'User',
-    );
-  }
-  
-  @override
-  Future<void> logout() async {
-    await Future.delayed(const Duration(milliseconds: 50));
-  }
-  
-  @override
-  Future<void> saveAuthToken(String token) async {
-    await Future.delayed(const Duration(milliseconds: 10));
-  }
-  
-  @override
-  Future<String?> getAuthToken() async {
-    await Future.delayed(const Duration(milliseconds: 10));
-    return null; // Start with no token for clean state
-  }
-  
-  @override
-  Future<void> clearAuthToken() async {
-    await Future.delayed(const Duration(milliseconds: 10));
-  }
+/// Legacy support for TestCredentials - will be replaced by MockDataFactory
+class TestCredentials {
+  static const String validEmail = MockDataFactory.defaultTestEmail;
+  static const String validPassword = MockDataFactory.defaultTestPassword;
 }
 
-/// Ultra-fast test manager using mocked dependencies
+/// Ultra-fast test manager using centralized mocked dependencies
 class MockedFastTestManager {
   static bool _initialized = false;
-  static late MockAuthRepository _mockAuthRepository;
   
   /// Initialize app with mocked dependencies for super-fast testing
   static Future<void> initializeMocked(WidgetTester tester) async {
@@ -90,7 +36,8 @@ class MockedFastTestManager {
       await Hive.initFlutter();
       await initHiveForFlutter();
       
-      _mockAuthRepository = MockAuthRepository();
+      // Initialize centralized mock repositories
+      MockRepositoryFactory.resetToDefaults();
       _initialized = true;
       
       final duration = DateTime.now().difference(startTime);
@@ -103,8 +50,9 @@ class MockedFastTestManager {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          // Override the auth repository with our mock
-          authRepositoryProvider.overrideWithValue(_mockAuthRepository),
+          // Override repositories with centralized mocks
+          authRepositoryProvider.overrideWithValue(MockRepositoryFactory.getAuthRepository()),
+          termsRepositoryProvider.overrideWithValue(MockRepositoryFactory.getTermsRepository()),
         ],
         child: const UKCPAApp(),
       ),
@@ -114,6 +62,27 @@ class MockedFastTestManager {
     await tester.pumpAndSettle(const Duration(milliseconds: 300));
     
     print('📱 Mocked app ready for testing');
+  }
+  
+  /// Initialize app configured for ultra-fast testing (no delays)
+  static Future<void> initializeUltraFast(WidgetTester tester) async {
+    MockRepositoryFactory.configureForSpeed();
+    await initializeMocked(tester);
+    print('⚡ Configured for ultra-fast testing (no delays)');
+  }
+  
+  /// Initialize app configured for error scenario testing
+  static Future<void> initializeWithErrors(WidgetTester tester) async {
+    MockRepositoryFactory.configureForErrorTesting();
+    await initializeMocked(tester);
+    print('❌ Configured for error scenario testing');
+  }
+  
+  /// Initialize app configured for empty state testing
+  static Future<void> initializeEmpty(WidgetTester tester) async {
+    MockRepositoryFactory.configureForEmptyState();
+    await initializeMocked(tester);
+    print('📭 Configured for empty state testing');
   }
   
   /// Create fast test batch with mocked dependencies
