@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/entities/course.dart';
 import '../../../../core/utils/date_utils.dart' as date_utils;
 import '../../../../core/utils/schedule_utils.dart';
 import '../../../../core/utils/text_utils.dart';
 import '../../../../core/utils/image_loader.dart';
+import '../../../providers/basket_provider.dart';
 import 'course_type_badge.dart';
 import 'taster_session_dropdown.dart';
 import 'deposit_payment_section.dart';
 
 /// Card widget for displaying an individual course within a course group
 /// Enhanced to match the website's course display exactly
-class CourseWithinGroupCard extends StatelessWidget {
+class CourseWithinGroupCard extends ConsumerWidget {
   final Course course;
   final VoidCallback onAddToBasket;
   final VoidCallback onTapCourse;
@@ -23,10 +25,13 @@ class CourseWithinGroupCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isAvailable = course.isAvailable;
     final isFullyBooked = course.fullyBooked;
+    
+    // Check if course is already in basket
+    final isInBasket = ref.watch(courseInBasketProvider(course.id));
 
     return Container(
       decoration: BoxDecoration(
@@ -64,7 +69,7 @@ class CourseWithinGroupCard extends StatelessWidget {
                 const SizedBox(height: 16),
                 
                 // Price and Main Action
-                _buildPriceAndMainAction(theme, isAvailable, isFullyBooked),
+                _buildPriceAndMainAction(theme, isAvailable, isFullyBooked, ref),
                 
                 // Taster Session Option (if available)
                 if (_shouldShowTasterSessions()) ...[
@@ -346,8 +351,9 @@ class CourseWithinGroupCard extends StatelessWidget {
   }
 
   /// Build price section and main add to basket button
-  Widget _buildPriceAndMainAction(ThemeData theme, bool isAvailable, bool isFullyBooked) {
+  Widget _buildPriceAndMainAction(ThemeData theme, bool isAvailable, bool isFullyBooked, WidgetRef ref) {
     final effectivePrice = course.currentPrice ?? course.price;
+    final isInBasket = ref.watch(courseInBasketProvider(course.id));
     
     return Column(
       children: [
@@ -364,24 +370,43 @@ class CourseWithinGroupCard extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: isAvailable && !isFullyBooked ? onAddToBasket : null,
+            onPressed: isAvailable && !isFullyBooked && !isInBasket ? onAddToBasket : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: theme.colorScheme.primary,
-              foregroundColor: theme.colorScheme.onPrimary,
+              backgroundColor: isInBasket 
+                  ? theme.colorScheme.surfaceVariant 
+                  : theme.colorScheme.primary,
+              foregroundColor: isInBasket 
+                  ? theme.colorScheme.onSurfaceVariant 
+                  : theme.colorScheme.onPrimary,
               padding: const EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: Text(
-              isFullyBooked 
-                  ? 'Fully booked' 
-                  : isAvailable 
-                      ? 'Add to basket'
-                      : 'Not Available',
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (isInBasket) ..[
+                  Icon(
+                    Icons.check_circle,
+                    size: 16,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Text(
+                  isInBasket 
+                      ? 'In Basket'
+                      : isFullyBooked 
+                          ? 'Fully booked' 
+                          : isAvailable 
+                              ? 'Add to basket'
+                              : 'Not Available',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
         ),

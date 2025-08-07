@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/terms_provider.dart';
+import '../../providers/basket_provider.dart';
 import '../../widgets/common/loading_shimmer.dart';
 import '../../widgets/common/error_state_widget.dart';
 import '../../widgets/navigation/app_scaffold.dart';
@@ -191,21 +192,86 @@ class CourseGroupDetailScreen extends ConsumerWidget {
   }
 
   /// Handle add to basket action
-  void _handleAddToBasket(BuildContext context, Course course) {
-    // TODO: Implement basket functionality in Phase 3
+  void _handleAddToBasket(BuildContext context, Course course, WidgetRef ref) async {
+    // Show loading indicator
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Add to basket: ${course.name}'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        action: SnackBarAction(
-          label: 'Undo',
-          textColor: Theme.of(context).colorScheme.onPrimary,
-          onPressed: () {
-            // TODO: Implement undo functionality
-          },
+        content: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Theme.of(context).colorScheme.onPrimary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text('Adding ${course.name} to basket...'),
+          ],
         ),
+        duration: const Duration(seconds: 2),
       ),
     );
+
+    try {
+      // Add course to basket using basket notifier
+      final basketNotifier = ref.read(basketNotifierProvider.notifier);
+      final success = await basketNotifier.addCourse(course.id);
+
+      // Clear any previous snackbar
+      ScaffoldMessenger.of(context).clearSnackBars();
+
+      if (success) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${course.name} added to basket'),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            action: SnackBarAction(
+              label: 'View Basket',
+              textColor: Theme.of(context).colorScheme.onPrimary,
+              onPressed: () {
+                // Navigate to basket (index 2 in bottom navigation)
+                Navigator.of(context).pushNamed('/basket');
+              },
+            ),
+          ),
+        );
+      } else {
+        // Show error message
+        final basketState = ref.read(basketNotifierProvider);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(basketState.error ?? 'Failed to add course to basket'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Theme.of(context).colorScheme.onError,
+              onPressed: () => _handleAddToBasket(context, course, ref),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      // Clear loading snackbar
+      ScaffoldMessenger.of(context).clearSnackBars();
+      
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error adding course to basket: ${e.toString()}'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          action: SnackBarAction(
+            label: 'Retry',
+            textColor: Theme.of(context).colorScheme.onError,
+            onPressed: () => _handleAddToBasket(context, course, ref),
+          ),
+        ),
+      );
+    }
   }
 
   /// Handle course tap action
@@ -382,10 +448,14 @@ class CourseGroupDetailScreen extends ConsumerWidget {
       itemCount: courses.length,
       itemBuilder: (context, index) {
         final course = courses[index];
-        return CourseWithinGroupCard(
-          course: course,
-          onAddToBasket: () => _handleAddToBasket(context, course),
-          onTapCourse: () => _handleCourseTap(context, course),
+        return Consumer(
+          builder: (context, ref, child) {
+            return CourseWithinGroupCard(
+              course: course,
+              onAddToBasket: () => _handleAddToBasket(context, course, ref),
+              onTapCourse: () => _handleCourseTap(context, course),
+            );
+          },
         );
       },
     );
@@ -396,10 +466,14 @@ class CourseGroupDetailScreen extends ConsumerWidget {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
-        child: CourseWithinGroupCard(
-          course: course,
-          onAddToBasket: () => _handleAddToBasket(context, course),
-          onTapCourse: () => _handleCourseTap(context, course),
+        child: Consumer(
+          builder: (context, ref, child) {
+            return CourseWithinGroupCard(
+              course: course,
+              onAddToBasket: () => _handleAddToBasket(context, course, ref),
+              onTapCourse: () => _handleCourseTap(context, course),
+            );
+          },
         ),
       ),
     );
