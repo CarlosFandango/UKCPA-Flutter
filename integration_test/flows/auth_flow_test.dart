@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import '../helpers/navigation_test_helper.dart';
 import '../helpers/fast_test_manager.dart';
 import '../helpers/automated_test_template.dart';
 import '../fixtures/test_credentials.dart';

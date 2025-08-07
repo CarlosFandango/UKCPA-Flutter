@@ -84,20 +84,64 @@ FastTestManager.createFastTestBatch(
 
 ## 🎯 Best Practices
 
-### Writing Fast Tests
-1. **Use FastTestManager**: Always use `FastTestManager.createFastTestBatch()`
-2. **Minimize Waits**: Use `tester.pump()` with short durations
-3. **Shared Authentication**: Set `requiresAuth: true` for authenticated tests
-4. **Quick Assertions**: Focus on essential validations only
-5. **Graceful Failures**: Tests should pass even when UI elements aren't found
+### ⚡ Navigation Helper (NEW - REQUIRED)
 
-### Example Fast Test
+**ALWAYS use NavigationTestHelper** to ensure correct page content:
+
 ```dart
+import '../helpers/navigation_test_helper.dart';
+
+testWidgets('My test', (tester) async {
+  // Ensures correct page content before testing
+  await NavigationTestHelper.ensurePageLoaded(
+    tester, 
+    NavigationTarget.courseList,
+  );
+  
+  // Test logic - guaranteed to examine correct page
+  expect(find.text('Expected Content'), findsWidgets);
+});
+```
+
+**Available Navigation Targets:**
+- `NavigationTarget.courseList` - Course/term list page
+- `NavigationTarget.login` - Authentication page  
+- `NavigationTarget.home` - Main dashboard
+- `NavigationTarget.basket` - Shopping cart
+- `NavigationTarget.courseDetail` - Course details
+
+### Writing Fast Tests
+1. **Use NavigationTestHelper**: Always ensure correct page content first
+2. **Use FastTestManager**: Always use `FastTestManager.createFastTestBatch()`
+3. **Minimize Waits**: Use `tester.pump()` with short durations
+4. **Shared Authentication**: Set `requiresAuth: true` for authenticated tests
+5. **Quick Assertions**: Focus on essential validations only
+6. **Graceful Failures**: Tests should pass even when UI elements aren't found
+
+### Example Fast Test with Navigation Helper
+```dart
+import '../helpers/navigation_test_helper.dart';
+
+testWidgets('My integration test', (tester) async {
+  // Step 1: Ensure correct page content  
+  await NavigationTestHelper.ensurePageLoaded(
+    tester, 
+    NavigationTarget.courseList,
+  );
+  
+  // Step 2: Test logic on guaranteed correct page
+  expect(find.text('Ballet Beginners'), findsOneWidget);
+  await tester.tap(find.text('Book Now'));
+  expect(find.text('Booking Confirmed'), findsOneWidget);
+});
+
+// For fast batch tests, combine both patterns:
 FastTestManager.createFastTestBatch(
   'My Fast Tests',
   {
     'should display content quickly': (tester) async {
-      await FastTestManager.navigateToScreen(tester, 'courses');
+      // Ensure correct page first
+      await NavigationTestHelper.ensurePageLoaded(tester, NavigationTarget.courseList);
       await tester.pump(const Duration(milliseconds: 500)); // Quick wait
       
       expect(find.text('Courses'), findsOneWidget);

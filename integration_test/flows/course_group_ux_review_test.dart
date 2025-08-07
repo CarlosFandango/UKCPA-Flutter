@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import '../helpers/mock_fast_test_manager.dart';
+import '../helpers/navigation_test_helper.dart';
 import '../helpers/automated_test_template.dart';
-import '../mocks/mock_data_factory.dart';
 
 /// UX/UI Review Test for Course Group List Page
 /// This test identifies and documents UX/UI issues that need fixing
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
+
   group('Course Group List Page - UX/UI Review', () {
     testWidgets('🔍 Review 1: Page Load and Initial State', (WidgetTester tester) async {
       print('\n📋 STARTING UX/UI REVIEW: Course Group List Page\n');
       
-      // Initialize app with centralized mocks and realistic data
-      await MockedFastTestManager.initializeMocked(tester);
+      // Ensure we're on the correct page before starting UX review
+      await NavigationTestHelper.ensurePageLoaded(
+        tester, 
+        NavigationTarget.courseList,
+        verboseLogging: true,
+      );
       
       // Let app fully load with mock data
       await tester.pumpAndSettle(const Duration(milliseconds: 1000));
@@ -120,8 +124,7 @@ void main() {
     });
 
     testWidgets('🔍 Review 2: Course Group List Layout Analysis', (WidgetTester tester) async {
-      await MockedFastTestManager.initializeMocked(tester);
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await NavigationTestHelper.ensurePageLoaded(tester, NavigationTarget.courseList);
       
       print('\n📐 LAYOUT ANALYSIS:');
       print('-'*40);
@@ -179,8 +182,7 @@ void main() {
     });
 
     testWidgets('🔍 Review 3: Course Group Content and Information Display', (WidgetTester tester) async {
-      await MockedFastTestManager.initializeMocked(tester);
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await NavigationTestHelper.ensurePageLoaded(tester, NavigationTarget.courseList);
       
       print('\n📝 CONTENT ANALYSIS:');
       print('-'*40);
@@ -272,8 +274,7 @@ void main() {
     });
 
     testWidgets('🔍 Review 4: Interactive Elements and CTAs', (WidgetTester tester) async {
-      await MockedFastTestManager.initializeMocked(tester);
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await NavigationTestHelper.ensurePageLoaded(tester, NavigationTarget.courseList);
       
       print('\n🎯 INTERACTIVE ELEMENTS ANALYSIS:');
       print('-'*40);
@@ -364,8 +365,7 @@ void main() {
     });
 
     testWidgets('🔍 Review 5: Filtering and Search Functionality', (WidgetTester tester) async {
-      await MockedFastTestManager.initializeMocked(tester);
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await NavigationTestHelper.ensurePageLoaded(tester, NavigationTarget.courseList);
       
       print('\n🔍 SEARCH & FILTER ANALYSIS:');
       print('-'*40);
@@ -431,8 +431,7 @@ void main() {
     });
 
     testWidgets('🔍 Review 6: Visual Hierarchy and Accessibility', (WidgetTester tester) async {
-      await MockedFastTestManager.initializeMocked(tester);
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await NavigationTestHelper.ensurePageLoaded(tester, NavigationTarget.courseList);
       
       print('\n🎨 VISUAL HIERARCHY ANALYSIS:');
       print('-'*40);
@@ -501,8 +500,7 @@ void main() {
     });
 
     testWidgets('🔍 Review 7: Error States and Edge Cases', (WidgetTester tester) async {
-      await MockedFastTestManager.initializeMocked(tester);
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await NavigationTestHelper.ensurePageLoaded(tester, NavigationTarget.courseList);
       
       print('\n⚠️ ERROR STATES & EDGE CASES:');
       print('-'*40);
@@ -571,8 +569,7 @@ void main() {
     });
 
     testWidgets('🔍 Final UX/UI Summary and Recommendations', (WidgetTester tester) async {
-      await MockedFastTestManager.initializeMocked(tester);
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await NavigationTestHelper.ensurePageLoaded(tester, NavigationTarget.courseList);
       
       print('\n' + '='*60);
       print('📊 COURSE GROUP LIST PAGE - UX/UI REVIEW SUMMARY');
