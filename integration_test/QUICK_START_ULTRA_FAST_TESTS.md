@@ -19,6 +19,9 @@ void main() {
     'Ultra-Fast [Your Feature] Tests',
     {
       'should test your feature quickly': (tester) async {
+        // Log page information for reports
+        await AutomatedTestTemplate.logPageInfo(tester, '[Target Page Name]');
+        
         // Your test code here - focuses on UI behavior
         expect(find.text('Expected Text'), findsOneWidget);
         
@@ -26,6 +29,10 @@ void main() {
         await FastAutomatedTestTemplate.waitForUI(tester);
         
         expect(find.text('Result Text'), findsOneWidget);
+        
+        // Capture screenshot for documentation
+        await AutomatedTestTemplate.takeUXScreenshot(tester, 'feature_name_screenshot');
+        
         print('✅ Your test complete (mocked)');
       },
     },
@@ -148,6 +155,30 @@ expect(found, isTrue); // ✅
 - **Authentication:** `ultra_fast_auth_test.dart` (30s for 7 tests)
 - **Course Discovery:** `ultra_fast_course_discovery_test.dart` (27s for 7 tests)
 - **Pattern:** Works for any feature requiring backend data
+
+## 📸 Page Detection & Screenshots (NEW!)
+
+### Automatic Page Detection
+```dart
+// Automatically logs current page and route
+await AutomatedTestTemplate.logPageInfo(tester, 'Target Page Name');
+// Output:
+// 📋 TEST TARGET: Target Page Name
+// 🕐 TIMESTAMP: 2024-01-15 10:30:45
+// 📱 PLATFORM: Flutter Integration Test
+// 📍 ACTUAL PAGE: Course Groups
+// 🔗 Route: /courses
+```
+
+### Screenshot Capture
+```dart
+// For UX/UI documentation (always captures)
+await AutomatedTestTemplate.takeUXScreenshot(tester, 'screenshot_name');
+// Screenshots saved to: build/screenshots/
+
+// For regular tests (respects fast mode)
+await AutomatedTestTemplate.takeScreenshot(tester, 'screenshot_name', inFastMode: false);
+```
 
 ## 🆘 When You Need Help
 
