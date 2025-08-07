@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import '../helpers/navigation_test_helper.dart';
 import '../helpers/automated_test_template.dart';
+import '../helpers/ui_component_interaction_helper.dart';
 
 /// UX/UI Review Test for Course Group List Page
 /// This test identifies and documents UX/UI issues that need fixing
@@ -341,10 +342,11 @@ void main() {
         print('⚠️  ISSUE: Very few tap targets - consider making more elements interactive');
       }
       
-      // Test interaction
+      // Test interaction with scrolling if needed
       print('\n🧪 INTERACTION TEST:');
       bool interactionWorked = false;
       
+      // First try direct interaction
       for (final target in tapTargets) {
         if (target.evaluate().isNotEmpty) {
           try {
@@ -359,73 +361,105 @@ void main() {
         }
       }
       
+      // If direct interaction failed, try scrolling to find interactive elements
       if (!interactionWorked) {
-        print('❌ ISSUE: Could not interact with any elements');
+        print('\n🔄 TRYING SCROLL-TO-INTERACT:');
+        
+        // Look for scrollable container
+        final scrollables = [
+          find.byType(ListView),
+          find.byType(GridView),
+          find.byType(SingleChildScrollView),
+        ];
+        
+        for (final scrollable in scrollables) {
+          if (scrollable.evaluate().isNotEmpty) {
+            try {
+              final scrollableWidget = scrollable.first;
+              final scrollKey = tester.widget(scrollableWidget).key;
+              
+              if (scrollKey != null) {
+                // Try to scroll to find a course card or interactive element
+                final courseCardFinder = find.textContaining('Course').first;
+                
+                final result = await UIComponentInteractionHelper.scrollToAndTap(
+                  tester,
+                  scrollableKey: scrollKey as Key,
+                  targetWidgetFinder: courseCardFinder,
+                  maxScrollAttempts: 5,
+                  verboseLogging: false,
+                );
+                
+                if (result.interactionSuccess) {
+                  print('✅ Successfully scrolled to and tapped element');
+                  interactionWorked = true;
+                  break;
+                } else {
+                  print('⚠️  Scroll-to-tap failed: ${result.error}');
+                }
+              }
+            } catch (e) {
+              print('⚠️  Scroll test failed: $e');
+            }
+          }
+        }
+      }
+      
+      if (!interactionWorked) {
+        print('❌ ISSUE: Could not interact with any elements (even with scrolling)');
+        print('   This indicates poor accessibility or missing interactive elements');
       }
     });
 
-    testWidgets('🔍 Review 5: Filtering and Search Functionality', (WidgetTester tester) async {
+    testWidgets('🔍 Review 5: Search and Filters', (WidgetTester tester) async {
       await NavigationTestHelper.ensurePageLoaded(tester, NavigationTarget.courseList);
       
-      print('\n🔍 SEARCH & FILTER ANALYSIS:');
-      print('-'*40);
+      print('\n🔍 SEARCH & FILTERS:');
       
-      // Check for search functionality
-      final searchElements = [
-        find.byType(TextField),
-        find.byType(TextFormField),
-        find.byIcon(Icons.search),
-        find.textContaining('Search'),
-      ];
+      // Search functionality check
+      final searchElements = [find.byType(TextField), find.byIcon(Icons.search), find.textContaining('Search')];
+      final hasSearch = searchElements.any((e) => e.evaluate().isNotEmpty);
       
-      bool hasSearch = false;
-      for (final element in searchElements) {
-        if (element.evaluate().isNotEmpty) {
-          hasSearch = true;
-          print('✅ Search element found: ${element.description}');
+      if (hasSearch) {
+        print('✅ Search available');
+        // Quick search test
+        try {
+          final textField = find.byType(TextField).first;
+          await tester.enterText(textField, 'Ballet');
+          await tester.pump(Duration(milliseconds: 300));
+          print('✅ Search accepts input');
+        } catch (e) {
+          print('⚠️  Search input failed');
         }
-      }
-      
-      if (!hasSearch) {
-        print('❌ ISSUE: No search functionality found');
-        print('   Users cannot search for specific courses');
-      }
-      
-      // Check for filters
-      print('\n🎛️ Filter Options:');
-      
-      final filterIndicators = [
-        'Filter', 'Sort', 'Category', 'Level', 
-        'Age', 'Price', 'Date', 'Time',
-      ];
-      
-      final foundFilters = <String>[];
-      for (final filter in filterIndicators) {
-        if (find.textContaining(filter).evaluate().isNotEmpty) {
-          foundFilters.add(filter);
-        }
-      }
-      
-      if (foundFilters.isEmpty) {
-        print('❌ ISSUE: No filter options found');
-        print('   Users cannot narrow down course selection');
       } else {
-        print('✅ Filters found: ${foundFilters.join(", ")}');
+        print('❌ No search functionality');
       }
       
-      // Check for dropdowns or chips
-      final filterWidgets = [
-        find.byType(DropdownButton),
-        find.byType(Chip),
-        find.byType(FilterChip),
-        find.byType(ChoiceChip),
-      ];
+      // Filter options check
+      final filterKeywords = ['Filter', 'Sort', 'Category', 'Level', 'Age', 'Price'];
+      final foundFilters = filterKeywords.where((f) => find.textContaining(f).evaluate().isNotEmpty).toList();
       
-      print('\n🎚️ Filter UI Elements:');
-      for (final widget in filterWidgets) {
-        final count = widget.evaluate().length;
-        if (count > 0) {
-          print('  - ${widget.description}: $count');
+      if (foundFilters.isNotEmpty) {
+        print('✅ Filters: ${foundFilters.join(", ")}');
+      } else {
+        print('❌ No filter options');
+      }
+      
+      // Test dropdown filters
+      final dropdowns = find.byType(DropdownButton);
+      if (dropdowns.evaluate().isNotEmpty) {
+        try {
+          final dropdown = tester.widget<DropdownButton>(dropdowns.first);
+          if (dropdown.key != null) {
+            final result = await UIComponentInteractionHelper.selectFromDropdown(
+              tester,
+              dropdownKey: dropdown.key!,
+              optionText: 'All',
+            );
+            if (result.interactionSuccess) print('✅ Dropdown filter works');
+          }
+        } catch (e) {
+          print('⚠️  Dropdown test failed');
         }
       }
     });
@@ -567,6 +601,132 @@ void main() {
         print('   Users cannot manually refresh the list');
       }
     });
+
+    testWidgets('🔍 Review 8: Component Interaction Testing', (WidgetTester tester) async {
+      await NavigationTestHelper.ensurePageLoaded(tester, NavigationTarget.courseList);
+      
+      print('\n🧪 COMPONENT INTERACTION TESTING:');
+      
+      // Test components in order of priority
+      final componentTests = [
+        () => _testTabNavigation(tester),
+        () => _testModalInteractions(tester), 
+        () => _testDatePickers(tester),
+        () => _testSliders(tester),
+        () => _testSwitches(tester),
+      ];
+      
+      for (final test in componentTests) {
+        await test();
+      }
+    });
+  });
+  
+  // Helper methods for component testing
+  static Future<void> _testTabNavigation(WidgetTester tester) async {
+    final tabBars = find.byType(TabBar);
+    if (tabBars.evaluate().isEmpty) return;
+    
+    print('📑 Tabs: Found ${tabBars.evaluate().length}');
+    final tabTexts = ['All', 'Ballet', 'Contemporary', 'Jazz', 'Beginner'];
+    
+    for (final tabText in tabTexts) {
+      final result = await UIComponentInteractionHelper.selectTab(tester, tabText: tabText);
+      if (result.interactionSuccess) {
+        print('✅ Tab "$tabText" works');
+        break; // Test one successful interaction
+      }
+    }
+  }
+  
+  static Future<void> _testModalInteractions(WidgetTester tester) async {
+    final triggers = ['Info', 'Details', 'Help', 'More', 'Settings'];
+    
+    for (final trigger in triggers) {
+      if (find.text(trigger).evaluate().isEmpty) continue;
+      
+      try {
+        await tester.tap(find.text(trigger).first);
+        await tester.pump(Duration(milliseconds: 300));
+        
+        final result = await UIComponentInteractionHelper.handleModal(
+          tester, 
+          actionButtonText: 'OK',
+          waitForDialog: Duration(seconds: 1),
+        );
+        
+        if (result.interactionSuccess) {
+          print('✅ Modal interaction works');
+          return;
+        }
+      } catch (e) {
+        continue;
+      }
+    }
+    print('📄 No working modals found');
+  }
+  
+  static Future<void> _testDatePickers(WidgetTester tester) async {
+    final dateFields = find.byType(TextField);
+    if (dateFields.evaluate().isEmpty) return;
+    
+    for (int i = 0; i < dateFields.evaluate().length && i < 2; i++) {
+      try {
+        final widget = tester.widget(dateFields.at(i));
+        final key = (widget as dynamic).key;
+        
+        if (key == null) continue;
+        
+        final result = await UIComponentInteractionHelper.selectDate(
+          tester,
+          dateFieldKey: key,
+          targetDate: DateTime.now().add(Duration(days: 7)),
+        );
+        
+        if (result.interactionSuccess) {
+          print('✅ Date picker works');
+          return;
+        }
+      } catch (e) {
+        continue;
+      }
+    }
+  }
+  
+  static Future<void> _testSliders(WidgetTester tester) async {
+    final sliders = find.byType(Slider);
+    if (sliders.evaluate().isEmpty) return;
+    
+    final slider = tester.widget<Slider>(sliders.first);
+    if (slider.key == null) return;
+    
+    final result = await UIComponentInteractionHelper.setSliderValue(
+      tester,
+      sliderKey: slider.key!,
+      targetValue: 0.7,
+    );
+    
+    if (result.interactionSuccess) {
+      print('✅ Slider works');
+    }
+  }
+  
+  static Future<void> _testSwitches(WidgetTester tester) async {
+    final switches = find.byType(Switch);
+    if (switches.evaluate().isEmpty) return;
+    
+    final switchWidget = tester.widget<Switch>(switches.first);
+    if (switchWidget.key == null) return;
+    
+    final result = await UIComponentInteractionHelper.toggleSwitch(
+      tester,
+      switchKey: switchWidget.key!,
+      targetState: !switchWidget.value,
+    );
+    
+    if (result.interactionSuccess) {
+      print('✅ Switch works');
+    }
 
     testWidgets('🔍 Final UX/UI Summary and Recommendations', (WidgetTester tester) async {
       await NavigationTestHelper.ensurePageLoaded(tester, NavigationTarget.courseList);
