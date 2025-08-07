@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../providers/basket_provider.dart';
 
 /// Bottom navigation item data
 class BottomNavItem {
@@ -141,7 +143,7 @@ class AppBottomNavBar extends StatelessWidget {
 }
 
 /// Individual bottom navigation bar item
-class _BottomNavBarItem extends StatelessWidget {
+class _BottomNavBarItem extends ConsumerWidget {
   final BottomNavItem item;
   final bool isSelected;
   final VoidCallback onTap;
@@ -153,13 +155,18 @@ class _BottomNavBarItem extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     
     final color = isSelected 
         ? colorScheme.primary 
         : colorScheme.onSurface.withOpacity(0.6);
+    
+    // Get basket item count for badge (only for basket tab)
+    final basketItemCount = item.label == 'Basket' 
+        ? ref.watch(basketItemCountProvider) 
+        : 0;
     
     return InkWell(
       onTap: onTap,
@@ -169,24 +176,68 @@ class _BottomNavBarItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Icon with background for selected state
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: isSelected
-                  ? BoxDecoration(
-                      color: colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    )
-                  : null,
-              child: Icon(
-                isSelected && item.activeIcon != null 
-                    ? item.activeIcon! 
-                    : item.icon,
-                size: 24,
-                color: isSelected 
-                    ? colorScheme.onPrimaryContainer 
-                    : color,
-              ),
+            // Icon with background for selected state and optional badge
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: isSelected
+                      ? BoxDecoration(
+                          color: colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        )
+                      : null,
+                  child: Icon(
+                    isSelected && item.activeIcon != null 
+                        ? item.activeIcon! 
+                        : item.icon,
+                    size: 24,
+                    color: isSelected 
+                        ? colorScheme.onPrimaryContainer 
+                        : color,
+                  ),
+                ),
+                
+                // Badge for basket item count
+                if (basketItemCount > 0)
+                  Positioned(
+                    right: -2,
+                    top: -2,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.error,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 3,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 20,
+                        minHeight: 20,
+                      ),
+                      child: Text(
+                        basketItemCount > 99 ? '99+' : basketItemCount.toString(),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onError,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                          height: 1.0, // Tight line height for compact badge
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                      ),
+                    ),
+                  ),
+              ],
             ),
             
             const SizedBox(height: 4),
