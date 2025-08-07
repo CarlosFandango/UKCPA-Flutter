@@ -268,7 +268,6 @@ class ErrorStateTestingHelper {
         tester,
         invalidCredentials,
         submitButtonText: 'Sign In',
-        validateAfterSubmit: false, // We expect this to fail
         verboseLogging: verboseLogging,
       );
       
@@ -348,7 +347,7 @@ class ErrorStateTestingHelper {
         'password-field': 'testpassword',
       };
       
-      await FormInteractionHelper.fillForm(tester, credentials);
+      await FormInteractionHelper.fillAndSubmitForm(tester, credentials);
       
       // Submit and wait for timeout
       final submitButton = find.text('Sign In').evaluate().isNotEmpty 
@@ -432,7 +431,6 @@ class ErrorStateTestingHelper {
         tester,
         invalidData,
         submitButtonText: submitButtonText,
-        validateAfterSubmit: false, // We expect validation to fail
         verboseLogging: verboseLogging,
       );
       
@@ -765,7 +763,7 @@ class ErrorStateTestingHelper {
     
     try {
       // Fill form with correct data
-      await FormInteractionHelper.fillForm(tester, correctData);
+      await FormInteractionHelper.fillAndSubmitForm(tester, correctData);
       
       // Wait for errors to potentially disappear
       await Future.delayed(recoveryTimeout);

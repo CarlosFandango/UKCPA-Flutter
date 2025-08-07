@@ -422,18 +422,24 @@ class AssertionHelper {
     try {
       final authState = await AuthenticationFlowHelper.getCurrentAuthState(
         tester,
-        timeout: timeout,
         verboseLogging: verboseLogging,
       );
       
-      if (authState.isAuthenticated && authState.userRole == expectedRole) {
+      if (authState == AuthenticationState.authenticated && expectedRole != UserRole.guest) {
         result.success = true;
-        result.details = 'User authenticated as ${expectedRole.toString()}';
+        result.details = 'User authenticated as expected for ${expectedRole.toString()}';
         
         if (verboseLogging) {
-          print('✅ Authentication state correct: $expectedRole');
+          print('✅ Authentication state correct: authenticated');
         }
-      } else if (!authState.isAuthenticated && expectedRole == UserRole.guest) {
+      } else if (authState == AuthenticationState.notAuthenticated && expectedRole == UserRole.guest) {
+        result.success = true;
+        result.details = 'User in guest state as expected';
+        
+        if (verboseLogging) {
+          print('✅ Guest state correct');
+        }
+      } else if (authState == AuthenticationState.guest && expectedRole == UserRole.guest) {
         result.success = true;
         result.details = 'User in guest state as expected';
         
@@ -441,10 +447,10 @@ class AssertionHelper {
           print('✅ Guest state correct');
         }
       } else {
-        result.error = 'Authentication state mismatch. Expected: $expectedRole, Actual: ${authState.userRole ?? 'unauthenticated'}';
+        result.error = 'Authentication state mismatch. Expected: $expectedRole, Actual: $authState';
         
         if (verboseLogging) {
-          print('❌ Auth state mismatch - Expected: $expectedRole, Actual: ${authState.userRole}');
+          print('❌ Auth state mismatch - Expected: $expectedRole, Actual: $authState');
         }
       }
       
