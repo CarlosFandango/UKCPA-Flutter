@@ -238,9 +238,7 @@ class CourseWithinGroupCard extends StatelessWidget {
     // Address/Location for Studio courses (matching website location display)
     if (course.type.contains('Studio') && course.address != null) {
       detailItems.add(
-        _buildDetailGridItem(
-          Icons.location_on,
-          'Location',
+        _buildLocationGridItem(
           _formatAddressDisplay(course.address!),
           theme,
         ),
@@ -255,6 +253,58 @@ class CourseWithinGroupCard extends StatelessWidget {
       mainAxisSpacing: 12,
       childAspectRatio: 3,
       children: detailItems,
+    );
+  }
+
+  /// Build location grid item (tappable for more details)
+  Widget _buildLocationGridItem(String locationText, ThemeData theme) {
+    return GestureDetector(
+      onTap: () => _showLocationDetails(context),
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.location_on,
+                  size: 14,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Location',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.info_outline,
+                  size: 12,
+                  color: theme.colorScheme.primary.withOpacity(0.6),
+                ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              locationText,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -383,16 +433,208 @@ class CourseWithinGroupCard extends StatelessWidget {
   String _formatAddressDisplay(Address address) {
     final parts = <String>[];
     
+    // Add address line 1 and 2 if available
     if (address.line1 != null && address.line1!.isNotEmpty) {
-      parts.add(address.line1!);
+      String addressLine = address.line1!;
+      if (address.line2 != null && address.line2!.isNotEmpty) {
+        addressLine += ', ${address.line2!}';
+      }
+      parts.add(addressLine);
+    } else if (address.line2 != null && address.line2!.isNotEmpty) {
+      parts.add(address.line2!);
     }
+    
+    // Add city
     if (address.city != null && address.city!.isNotEmpty) {
       parts.add(address.city!);
     }
+    
+    // Add postcode - always show postcode if available for UK addresses
     if (address.postCode != null && address.postCode!.isNotEmpty) {
       parts.add(address.postCode!);
     }
     
-    return parts.isNotEmpty ? parts.join(', ') : 'Studio Location';
+    // If no location information available, show studio location placeholder
+    if (parts.isEmpty) {
+      return 'Studio Location';
+    }
+    
+    // Join parts with commas, but limit to avoid overcrowding in card
+    if (parts.length > 2) {
+      return '${parts[0]}, ${parts.last}'; // Show first part and postcode/last part
+    }
+    
+    return parts.join(', ');
+  }
+
+  /// Show detailed location information in a modal
+  void _showLocationDetails(BuildContext context) {
+    if (course.address == null) return;
+    
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => _buildLocationModal(context),
+    );
+  }
+
+  /// Build location details modal
+  Widget _buildLocationModal(BuildContext context) {
+    final theme = Theme.of(context);
+    final address = course.address!;
+    
+    return Container(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Modal header
+          Row(
+            children: [
+              Icon(
+                Icons.location_on,
+                color: theme.colorScheme.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Studio Location',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.close),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Course name
+          Text(
+            course.name,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Full address
+          _buildAddressLine(context, 'Address', _formatFullAddress(address)),
+          
+          if (address.city != null && address.city!.isNotEmpty)
+            _buildAddressLine(context, 'City', address.city!),
+            
+          if (address.postCode != null && address.postCode!.isNotEmpty)
+            _buildAddressLine(context, 'Postcode', address.postCode!),
+            
+          if (address.county != null && address.county!.isNotEmpty)
+            _buildAddressLine(context, 'County', address.county!),
+            
+          if (address.country != null && address.country!.isNotEmpty)
+            _buildAddressLine(context, 'Country', address.country!),
+          
+          const SizedBox(height: 24),
+          
+          // Action buttons
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _openInMaps(),
+                  icon: const Icon(Icons.map),
+                  label: const Text('Open in Maps'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _getDirections(),
+                  icon: const Icon(Icons.directions),
+                  label: const Text('Get Directions'),
+                ),
+              ),
+            ],
+          ),
+          
+          // Safe area padding
+          SizedBox(height: MediaQuery.of(context).padding.bottom),
+        ],
+      ),
+    );
+  }
+
+  /// Build address line in modal
+  Widget _buildAddressLine(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              '$label:',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Format full address for display
+  String _formatFullAddress(Address address) {
+    final parts = <String>[];
+    
+    if (address.line1 != null && address.line1!.isNotEmpty) {
+      parts.add(address.line1!);
+    }
+    if (address.line2 != null && address.line2!.isNotEmpty) {
+      parts.add(address.line2!);
+    }
+    
+    return parts.isNotEmpty ? parts.join(', ') : 'Address not specified';
+  }
+
+  /// Open location in maps app
+  void _openInMaps() {
+    // TODO: Implement maps integration in Phase 3
+    Navigator.of(context).pop();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Maps integration coming soon'),
+      ),
+    );
+  }
+
+  /// Get directions to location
+  void _getDirections() {
+    // TODO: Implement directions in Phase 3
+    Navigator.of(context).pop();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Directions feature coming soon'),
+      ),
+    );
   }
 }
