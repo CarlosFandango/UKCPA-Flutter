@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../domain/entities/course.dart';
-import '../../../../core/utils/money_formatter.dart';
 import '../../../../core/utils/date_utils.dart' as date_utils;
+import '../../../../core/utils/schedule_utils.dart';
 import '../../../../core/utils/text_utils.dart';
-import 'add_to_basket_button.dart';
 import 'course_type_badge.dart';
 import 'taster_session_dropdown.dart';
 import 'deposit_payment_section.dart';
@@ -175,8 +174,79 @@ class CourseWithinGroupCard extends StatelessWidget {
     );
   }
 
-  /// Build course details grid matching website layout
+  /// Build course details grid matching website layout exactly
   Widget _buildCourseDetailsGrid(ThemeData theme) {
+    final scheduleInfo = course.scheduleInfo;
+    final detailItems = <Widget>[];
+    
+    // Smart Schedule Display - Time (matching website ScheduleDisplay component)
+    if (scheduleInfo.timeText.isNotEmpty) {
+      detailItems.add(
+        _buildDetailGridItem(
+          Icons.access_time,
+          'Time',
+          scheduleInfo.timeText,
+          theme,
+        ),
+      );
+    }
+    
+    // Dates (matching website date format)
+    if (course.startDateTime != null && course.endDateTime != null) {
+      detailItems.add(
+        _buildDetailGridItem(
+          Icons.calendar_today,
+          'Dates',
+          date_utils.DateUtils.getDateRange(course.startDateTime!, course.endDateTime!),
+          theme,
+        ),
+      );
+    }
+    
+    // Weeks (matching website weeks display)
+    if (course.weeks != null) {
+      detailItems.add(
+        _buildDetailGridItem(
+          Icons.repeat,
+          'Weeks',
+          course.weeks.toString(),
+          theme,
+        ),
+      );
+    }
+    
+    // Level (matching website level formatting)
+    detailItems.add(
+      _buildDetailGridItem(
+        Icons.star_outline,
+        'Level',
+        course.levelDisplay,
+        theme,
+      ),
+    );
+    
+    // Age Group (matching website age group formatting)
+    detailItems.add(
+      _buildDetailGridItem(
+        Icons.people_outline,
+        'Age Group',
+        course.ageGroupDisplay,
+        theme,
+      ),
+    );
+    
+    // Address/Location for Studio courses (matching website location display)
+    if (course.type.contains('Studio') && course.address != null) {
+      detailItems.add(
+        _buildDetailGridItem(
+          Icons.location_on,
+          'Location',
+          _formatAddressDisplay(course.address!),
+          theme,
+        ),
+      );
+    }
+    
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
@@ -184,50 +254,7 @@ class CourseWithinGroupCard extends StatelessWidget {
       crossAxisSpacing: 16,
       mainAxisSpacing: 12,
       childAspectRatio: 3,
-      children: [
-        // Time
-        if (course.startDateTime != null && course.endDateTime != null)
-          _buildDetailGridItem(
-            Icons.access_time,
-            'Time',
-            date_utils.DateUtils.getTimeRange(course.startDateTime!, course.endDateTime!),
-            theme,
-          ),
-        
-        // Dates  
-        if (course.startDateTime != null && course.endDateTime != null)
-          _buildDetailGridItem(
-            Icons.calendar_today,
-            'Dates',
-            date_utils.DateUtils.getDateRange(course.startDateTime!, course.endDateTime!),
-            theme,
-          ),
-        
-        // Weeks
-        if (course.weeks != null)
-          _buildDetailGridItem(
-            Icons.repeat,
-            'Weeks',
-            course.weeks.toString(),
-            theme,
-          ),
-        
-        // Level
-        _buildDetailGridItem(
-          Icons.star_outline,
-          'Level',
-          course.level != null ? TextUtils.formatLevel(course.level!.name) : 'All levels',
-          theme,
-        ),
-        
-        // Age Group
-        _buildDetailGridItem(
-          Icons.people_outline,
-          'Age Group',
-          _getAgeGroupDisplay(),
-          theme,
-        ),
-      ],
+      children: detailItems,
     );
   }
 
@@ -274,7 +301,7 @@ class CourseWithinGroupCard extends StatelessWidget {
     return Column(
       children: [
         Text(
-          TextUtils.formatPrice(effectivePrice),
+          '£${(effectivePrice / 100).toStringAsFixed(2)}',
           style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
             color: theme.colorScheme.onSurface,
@@ -352,16 +379,20 @@ class CourseWithinGroupCard extends StatelessWidget {
            course.depositPrice! > 0;
   }
 
-  /// Get age group display string
-  String _getAgeGroupDisplay() {
-    if (course.ageFrom != null && course.ageTo != null) {
-      return '${course.ageFrom}-${course.ageTo} years';
-    } else if (course.attendanceTypes.isNotEmpty) {
-      return TextUtils.formatAttendanceTypesList(
-        course.attendanceTypes.map((type) => type.name).toList()
-      );
+  /// Format address for location display (matching website CourseLocation component)
+  String _formatAddressDisplay(Address address) {
+    final parts = <String>[];
+    
+    if (address.line1 != null && address.line1!.isNotEmpty) {
+      parts.add(address.line1!);
     }
-    return 'All ages';
+    if (address.city != null && address.city!.isNotEmpty) {
+      parts.add(address.city!);
+    }
+    if (address.postCode != null && address.postCode!.isNotEmpty) {
+      parts.add(address.postCode!);
+    }
+    
+    return parts.isNotEmpty ? parts.join(', ') : 'Studio Location';
   }
-
 }
