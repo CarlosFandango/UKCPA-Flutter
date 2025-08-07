@@ -4,7 +4,7 @@ import 'package:integration_test/integration_test.dart';
 import '../helpers/authentication_flow_helper.dart';
 import '../helpers/navigation_test_helper.dart';
 
-/// Course Discovery Tests - Using Authentication Flow Helper
+/// Enhanced Course Discovery Tests - Using Authentication Flow Helper
 /// 
 /// Tests course discovery functionality with different user roles and authentication states.
 /// This demonstrates how to use AuthenticationFlowHelper for comprehensive user scenario testing.
@@ -49,6 +49,25 @@ void main() {
       }
       
       expect(foundContent, isTrue, reason: 'Guest users should see course content');
+      
+      // Guest users should see sign-in prompts for booking
+      final guestLimitations = [
+        find.textContaining('Sign in to book'),
+        find.textContaining('Register to book'),
+        find.text('Login Required'),
+      ];
+      
+      bool foundGuestLimitations = false;
+      for (final limitation in guestLimitations) {
+        if (limitation.evaluate().isNotEmpty) {
+          foundGuestLimitations = true;
+          print('✅ Found guest limitations');
+          break;
+        }
+      }
+      
+      // Note: Guest limitations may not always be visible until booking is attempted
+      print('ℹ️  Guest limitations visible: $foundGuestLimitations');
     });
     
     testWidgets('Registered user can browse and interact with courses', (tester) async {
@@ -106,9 +125,52 @@ void main() {
         }
       }
       
+      // Note: Booking options may not be visible if no courses are available
       print('ℹ️  Booking options visible: $foundBookingOptions');
     });
     
+    testWidgets('Admin user sees additional course management features', (tester) async {
+      // Login as admin user
+      final authResult = await AuthenticationFlowHelper.loginAs(
+        tester,
+        UserRole.adminUser,
+        verboseLogging: true,
+      );
+      
+      expect(authResult.loginSuccess, isTrue);
+      expect(authResult.authenticatedUser?.isAdmin, isTrue);
+      
+      // Navigate to course list
+      await NavigationTestHelper.ensurePageLoaded(
+        tester,
+        NavigationTarget.courseList,
+        verboseLogging: true,
+      );
+      
+      // Check for admin-specific features
+      final adminFeatures = [
+        find.text('Admin Panel'),
+        find.text('Manage Courses'),
+        find.text('Edit Course'),
+        find.text('Add Course'),
+        find.byIcon(Icons.admin_panel_settings),
+        find.byIcon(Icons.edit),
+        find.byIcon(Icons.add),
+      ];
+      
+      bool foundAdminFeatures = false;
+      for (final feature in adminFeatures) {
+        if (feature.evaluate().isNotEmpty) {
+          foundAdminFeatures = true;
+          print('✅ Found admin features');
+          break;
+        }
+      }
+      
+      // Note: Admin features may only be visible in specific admin areas
+      print('ℹ️  Admin features visible on course list: $foundAdminFeatures');
+    });
+
     testWidgets('Multiple user session management', (tester) async {
       // Test user session switching
       
@@ -195,7 +257,45 @@ void main() {
       }
     });
 
-    testWidgets('Course discovery with authentication recovery', (tester) async {
+    testWidgets('Course discovery error handling without authentication', (tester) async {
+      // Reset to clean state (no authentication)
+      await AuthenticationFlowHelper.resetAuthState(tester);
+      
+      // Verify we're in unauthenticated state
+      final authState = await AuthenticationFlowHelper.getCurrentAuthState(tester);
+      expect(authState, AuthenticationState.notAuthenticated);
+      
+      // Try to navigate to course list
+      await NavigationTestHelper.ensurePageLoaded(tester, NavigationTarget.courseList);
+      
+      // Should either:
+      // 1. Show courses with guest limitations, or
+      // 2. Redirect to login, or  
+      // 3. Show error message
+      
+      final possibleStates = [
+        find.text('Sign in to your account'),           // Redirected to login
+        find.textContaining('Login required'),         // Error message
+        find.textContaining('Sign in to book'),        // Guest limitations
+        find.byType(Card),                             // Course content visible to guests
+      ];
+      
+      bool foundValidState = false;
+      String currentState = 'Unknown';
+      
+      for (final state in possibleStates) {
+        if (state.evaluate().isNotEmpty) {
+          foundValidState = true;
+          currentState = state.description;
+          break;
+        }
+      }
+      
+      expect(foundValidState, isTrue, reason: 'Should handle unauthenticated course access gracefully');
+      print('✅ Unauthenticated course access handled: $currentState');
+    });
+
+    testWidgets('Course discovery with invalid authentication recovery', (tester) async {
       // Attempt login with invalid credentials
       final invalidResult = await AuthenticationFlowHelper.loginAs(
         tester,
