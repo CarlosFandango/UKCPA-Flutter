@@ -386,7 +386,7 @@ class CourseWithinGroupCard extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (isInBasket) ..[
+                if (isInBasket) ...[
                   Icon(
                     Icons.check_circle,
                     size: 16,
