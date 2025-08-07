@@ -25,12 +25,18 @@ class CourseTypeBadge extends StatelessWidget {
     CourseTypeBadgeSize size = CourseTypeBadgeSize.medium,
     CourseTypeBadgeStyle style = CourseTypeBadgeStyle.filled,
   }) {
-    final isOnline = course.type == 'OnlineCourse' || course.location == Location.online;
-    final isStudio = course.type == 'StudioCourse' && course.location != Location.online;
+    final isOnline = course.type?.contains('Online') ?? false;
+    final isStudio = course.type?.contains('Studio') ?? false;
     
     String? locationText;
-    if (isStudio && course is StudioCourse) {
-      locationText = TextUtils.formatLocationName((course as StudioCourse).location.name);
+    if (isStudio && course.address != null) {
+      // For studio courses, show simplified location
+      final address = course.address!;
+      if (address.city != null && address.city!.isNotEmpty) {
+        locationText = address.city!;
+      } else {
+        locationText = 'Studio';
+      }
     } else if (isOnline) {
       locationText = 'Online';
     }

@@ -258,51 +258,53 @@ class CourseWithinGroupCard extends StatelessWidget {
 
   /// Build location grid item (tappable for more details)
   Widget _buildLocationGridItem(String locationText, ThemeData theme) {
-    return GestureDetector(
-      onTap: () => _showLocationDetails(context),
-      child: Container(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.location_on,
-                  size: 14,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Location',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                    fontWeight: FontWeight.w500,
+    return Builder(
+      builder: (context) => GestureDetector(
+        onTap: () => _showLocationDetails(context),
+        child: Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.location_on,
+                    size: 14,
+                    color: theme.colorScheme.primary,
                   ),
-                ),
-                const Spacer(),
-                Icon(
-                  Icons.info_outline,
-                  size: 12,
-                  color: theme.colorScheme.primary.withOpacity(0.6),
-                ),
-              ],
-            ),
-            const SizedBox(height: 2),
-            Text(
-              locationText,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface,
-                fontWeight: FontWeight.w600,
+                  const SizedBox(width: 4),
+                  Text(
+                    'Location',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    Icons.info_outline,
+                    size: 12,
+                    color: theme.colorScheme.primary.withOpacity(0.6),
+                  ),
+                ],
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+              const SizedBox(height: 2),
+              Text(
+                locationText,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -547,7 +549,7 @@ class CourseWithinGroupCard extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => _openInMaps(),
+                  onPressed: () => _openInMaps(context),
                   icon: const Icon(Icons.map),
                   label: const Text('Open in Maps'),
                 ),
@@ -555,7 +557,7 @@ class CourseWithinGroupCard extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => _getDirections(),
+                  onPressed: () => _getDirections(context),
                   icon: const Icon(Icons.directions),
                   label: const Text('Get Directions'),
                 ),
@@ -617,7 +619,7 @@ class CourseWithinGroupCard extends StatelessWidget {
   }
 
   /// Open location in maps app
-  void _openInMaps() {
+  void _openInMaps(BuildContext context) {
     // TODO: Implement maps integration in Phase 3
     Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -628,7 +630,7 @@ class CourseWithinGroupCard extends StatelessWidget {
   }
 
   /// Get directions to location
-  void _getDirections() {
+  void _getDirections(BuildContext context) {
     // TODO: Implement directions in Phase 3
     Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(
