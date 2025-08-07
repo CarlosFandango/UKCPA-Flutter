@@ -23,6 +23,9 @@ class _CourseGroupDiscoveryScreenState extends ConsumerState<CourseGroupDiscover
   String _searchQuery = '';
   String? _selectedDanceType;
   String? _selectedLocation;
+  String? _selectedAgeGroup;
+  String? _selectedLevel;
+  List<String> _selectedDays = [];
   int? _selectedTermId;
 
   @override
@@ -131,6 +134,21 @@ class _CourseGroupDiscoveryScreenState extends ConsumerState<CourseGroupDiscover
                   onLocationChanged: (location) {
                     setState(() {
                       _selectedLocation = location;
+                    });
+                  },
+                  onAgeGroupChanged: (ageGroup) {
+                    setState(() {
+                      _selectedAgeGroup = ageGroup;
+                    });
+                  },
+                  onLevelChanged: (level) {
+                    setState(() {
+                      _selectedLevel = level;
+                    });
+                  },
+                  onDaysChanged: (days) {
+                    setState(() {
+                      _selectedDays = days;
                     });
                   },
                 ),
@@ -365,7 +383,69 @@ class _CourseGroupDiscoveryScreenState extends ConsumerState<CourseGroupDiscover
       }).toList();
     }
 
+    // Apply age group filter
+    if (_selectedAgeGroup != null && _selectedAgeGroup!.isNotEmpty) {
+      filtered = filtered.where((group) {
+        return _courseGroupMatchesAgeGroup(group, _selectedAgeGroup!);
+      }).toList();
+    }
+
+    // Apply level filter
+    if (_selectedLevel != null && _selectedLevel!.isNotEmpty) {
+      filtered = filtered.where((group) {
+        return _courseGroupMatchesLevel(group, _selectedLevel!);
+      }).toList();
+    }
+
+    // Apply days filter
+    if (_selectedDays.isNotEmpty) {
+      filtered = filtered.where((group) {
+        return _courseGroupMatchesDays(group, _selectedDays);
+      }).toList();
+    }
+
     return filtered;
+  }
+
+  bool _courseGroupMatchesAgeGroup(CourseGroup group, String ageGroup) {
+    switch (ageGroup) {
+      case 'Children':
+        return group.attendanceTypes.contains('children') || group.coursesForChildren.isNotEmpty;
+      case 'Adults':
+        return group.attendanceTypes.contains('adults') || group.coursesForAdults.isNotEmpty;
+      case 'All Ages':
+        return group.isFamilyFriendly;
+      default:
+        return true;
+    }
+  }
+
+  bool _courseGroupMatchesLevel(CourseGroup group, String level) {
+    return group.courses.any((course) {
+      final courseLevel = course.level?.name.toLowerCase();
+      return courseLevel == level.toLowerCase();
+    });
+  }
+
+  bool _courseGroupMatchesDays(CourseGroup group, List<String> selectedDays) {
+    final dayMap = {
+      'Mon': 'Monday',
+      'Tue': 'Tuesday', 
+      'Wed': 'Wednesday',
+      'Thu': 'Thursday',
+      'Fri': 'Friday',
+      'Sat': 'Saturday',
+      'Sun': 'Sunday'
+    };
+    
+    return group.courses.any((course) {
+      if (course.days == null || course.days!.isEmpty) return false;
+      return selectedDays.any((selectedDay) {
+        final fullDayName = dayMap[selectedDay];
+        return course.days!.any((courseDay) => 
+            courseDay.toLowerCase().contains(fullDayName?.toLowerCase() ?? selectedDay.toLowerCase()));
+      });
+    });
   }
 
   List<CourseGroup> _getFilteredCourseGroups(List<Term> terms) {
@@ -383,6 +463,9 @@ class _CourseGroupDiscoveryScreenState extends ConsumerState<CourseGroupDiscover
       _searchQuery = '';
       _selectedDanceType = null;
       _selectedLocation = null;
+      _selectedAgeGroup = null;
+      _selectedLevel = null;
+      _selectedDays.clear();
       _selectedTermId = null;
     });
   }

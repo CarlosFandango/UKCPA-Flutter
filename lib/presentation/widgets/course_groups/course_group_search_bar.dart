@@ -7,12 +7,18 @@ class CourseGroupSearchBar extends ConsumerStatefulWidget {
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<String?> onDanceTypeChanged;
   final ValueChanged<String?> onLocationChanged;
+  final ValueChanged<String?> onAgeGroupChanged;
+  final ValueChanged<String?> onLevelChanged;
+  final ValueChanged<List<String>> onDaysChanged;
 
   const CourseGroupSearchBar({
     super.key,
     required this.onSearchChanged,
     required this.onDanceTypeChanged,
     required this.onLocationChanged,
+    required this.onAgeGroupChanged,
+    required this.onLevelChanged,
+    required this.onDaysChanged,
   });
 
   @override
@@ -23,6 +29,9 @@ class _CourseGroupSearchBarState extends ConsumerState<CourseGroupSearchBar> {
   final TextEditingController _searchController = TextEditingController();
   String? _selectedDanceType;
   String? _selectedLocation;
+  String? _selectedAgeGroup;
+  String? _selectedLevel;
+  List<String> _selectedDays = [];
   bool _showFilters = false;
 
   @override
@@ -127,7 +136,7 @@ class _CourseGroupSearchBarState extends ConsumerState<CourseGroupSearchBar> {
                     children: [
                       const SizedBox(height: 16),
                       
-                      // Filter Row
+                      // First Filter Row
                       Row(
                         children: [
                           // Dance Type Filter
@@ -168,8 +177,71 @@ class _CourseGroupSearchBarState extends ConsumerState<CourseGroupSearchBar> {
                         ],
                       ),
 
+                      const SizedBox(height: 12),
+
+                      // Second Filter Row
+                      Row(
+                        children: [
+                          // Age Group Filter
+                          Expanded(
+                            child: _buildFilterDropdown(
+                              context,
+                              label: 'Age Group',
+                              value: _selectedAgeGroup,
+                              items: const ['Children', 'Adults', 'All Ages'],
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedAgeGroup = value;
+                                });
+                                widget.onAgeGroupChanged(value);
+                              },
+                              icon: Icons.people,
+                            ),
+                          ),
+                          
+                          const SizedBox(width: 12),
+                          
+                          // Level Filter
+                          Expanded(
+                            child: _buildFilterDropdown(
+                              context,
+                              label: 'Level',
+                              value: _selectedLevel,
+                              items: const ['Beginner', 'Intermediate', 'Advanced'],
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedLevel = value;
+                                });
+                                widget.onLevelChanged(value);
+                              },
+                              icon: Icons.bar_chart,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // Days of Week Filter
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Days of Week',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: theme.colorScheme.onSurface.withOpacity(0.7),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          _buildDaySelector(context),
+                        ],
+                      ),
+
                       // Clear Filters Button
-                      if (_selectedDanceType != null || _selectedLocation != null) ...[
+                      if (_selectedDanceType != null || _selectedLocation != null || 
+                          _selectedAgeGroup != null || _selectedLevel != null || 
+                          _selectedDays.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         Align(
                           alignment: Alignment.centerRight,
@@ -273,12 +345,55 @@ class _CourseGroupSearchBarState extends ConsumerState<CourseGroupSearchBar> {
     return value[0].toUpperCase() + value.substring(1).toLowerCase();
   }
 
+  Widget _buildDaySelector(BuildContext context) {
+    final theme = Theme.of(context);
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    
+    return Wrap(
+      spacing: 8,
+      runSpacing: 4,
+      children: days.map((day) {
+        final isSelected = _selectedDays.contains(day);
+        return FilterChip(
+          label: Text(day),
+          selected: isSelected,
+          onSelected: (selected) {
+            setState(() {
+              if (selected) {
+                _selectedDays.add(day);
+              } else {
+                _selectedDays.remove(day);
+              }
+            });
+            widget.onDaysChanged(_selectedDays);
+          },
+          selectedColor: theme.colorScheme.primaryContainer,
+          backgroundColor: theme.colorScheme.surfaceContainerHighest,
+          labelStyle: TextStyle(
+            color: isSelected 
+                ? theme.colorScheme.onPrimaryContainer
+                : theme.colorScheme.onSurface,
+            fontSize: 12,
+          ),
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
+        );
+      }).toList(),
+    );
+  }
+
   void _clearAllFilters() {
     setState(() {
       _selectedDanceType = null;
       _selectedLocation = null;
+      _selectedAgeGroup = null;
+      _selectedLevel = null;
+      _selectedDays.clear();
     });
     widget.onDanceTypeChanged(null);
     widget.onLocationChanged(null);
+    widget.onAgeGroupChanged(null);
+    widget.onLevelChanged(null);
+    widget.onDaysChanged([]);
   }
 }

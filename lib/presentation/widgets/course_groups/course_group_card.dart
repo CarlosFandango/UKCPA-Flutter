@@ -23,10 +23,7 @@ class CourseGroupCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
+      child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             gradient: LinearGradient(
@@ -106,10 +103,23 @@ class CourseGroupCard extends StatelessWidget {
                             ),
                           
                           // View Course Button
-                          Icon(
-                            Icons.arrow_forward,
-                            color: theme.colorScheme.primary,
-                            size: 20,
+                          ElevatedButton.icon(
+                            onPressed: onTap,
+                            icon: const Icon(Icons.arrow_forward, size: 16),
+                            label: const Text('View Course'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: theme.colorScheme.primary,
+                              foregroundColor: theme.colorScheme.onPrimary,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              minimumSize: const Size(100, 36),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              elevation: 2,
+                            ),
                           ),
                         ],
                       ),
@@ -120,7 +130,6 @@ class CourseGroupCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
     );
   }
 
