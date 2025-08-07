@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/utils/image_loader.dart';
 
 /// Base card component for displaying course/content details
 /// Reusable across different contexts: course booking, user portal, video access, etc.
@@ -104,27 +105,27 @@ class BaseDetailCard extends StatelessWidget {
   }
 
   Widget _buildImageSection(ThemeData theme) {
-    return Container(
-      height: imageHeight,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.only(
-          topLeft: (borderRadius ?? BorderRadius.circular(16)).topLeft,
-          topRight: (borderRadius ?? BorderRadius.circular(16)).topRight,
-        ),
-        image: DecorationImage(
-          image: NetworkImage(imageUrl!),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: imageOverlay != null ? Stack(
+    final topRadius = BorderRadius.only(
+      topLeft: (borderRadius ?? BorderRadius.circular(16)).topLeft,
+      topRight: (borderRadius ?? BorderRadius.circular(16)).topRight,
+    );
+
+    Widget imageWidget = ImageLoader.forCourseCard(
+      imageUrl: imageUrl,
+      width: double.infinity,
+      height: imageHeight!,
+      borderRadius: topRadius,
+    );
+
+    if (imageOverlay != null) {
+      imageWidget = Stack(
         children: [
+          imageWidget,
           // Gradient overlay for better text readability
           Container(
+            height: imageHeight,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.only(
-                topLeft: (borderRadius ?? BorderRadius.circular(16)).topLeft,
-                topRight: (borderRadius ?? BorderRadius.circular(16)).topRight,
-              ),
+              borderRadius: topRadius,
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -137,8 +138,10 @@ class BaseDetailCard extends StatelessWidget {
           ),
           imageOverlay!,
         ],
-      ) : null,
-    );
+      );
+    }
+
+    return imageWidget;
   }
 
   Widget _buildHeaderSection(ThemeData theme) {

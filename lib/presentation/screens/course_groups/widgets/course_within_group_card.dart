@@ -3,6 +3,7 @@ import '../../../../domain/entities/course.dart';
 import '../../../../core/utils/date_utils.dart' as date_utils;
 import '../../../../core/utils/schedule_utils.dart';
 import '../../../../core/utils/text_utils.dart';
+import '../../../../core/utils/image_loader.dart';
 import 'course_type_badge.dart';
 import 'taster_session_dropdown.dart';
 import 'deposit_payment_section.dart';
@@ -86,57 +87,55 @@ class CourseWithinGroupCard extends StatelessWidget {
 
   /// Build course image with proper positioning
   Widget _buildCourseImage(ThemeData theme) {
-    final imagePosition = course.imagePosition;
-    final positionX = imagePosition?.X ?? 0;
-    final positionY = imagePosition?.Y ?? 0;
-    
-    return Container(
-      height: 160,
-      decoration: BoxDecoration(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(16),
-          topRight: Radius.circular(16),
-        ),
-        image: DecorationImage(
-          image: NetworkImage(course.image!),
-          fit: BoxFit.cover,
-          alignment: Alignment(
-            (positionX / 50) - 1, // Convert 0-100 to -1 to 1
-            (positionY / 50) - 1,
+    final imagePosition = course.imagePosition != null
+        ? ImagePosition(
+            X: course.imagePosition!.X.toDouble(),
+            Y: course.imagePosition!.Y.toDouble(),
+          )
+        : null;
+
+    return Stack(
+      children: [
+        ImageLoader.forCourseCard(
+          imageUrl: course.image,
+          width: double.infinity,
+          height: 160,
+          imagePosition: imagePosition,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(16),
+            topRight: Radius.circular(16),
           ),
         ),
-      ),
-      child: Stack(
-        children: [
-          // Gradient overlay
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.3),
-                ],
-              ),
+        
+        // Gradient overlay
+        Container(
+          height: 160,
+          decoration: BoxDecoration(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+            ),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.transparent,
+                Colors.black.withOpacity(0.3),
+              ],
             ),
           ),
-          
-          // Course type badge
-          Positioned(
-            top: 8,
-            left: 8,
-            child: CourseTypeBadge.fromCourse(
-              course,
-              size: CourseTypeBadgeSize.small,
-            ),
+        ),
+        
+        // Course type badge
+        Positioned(
+          top: 8,
+          left: 8,
+          child: CourseTypeBadge.fromCourse(
+            course,
+            size: CourseTypeBadgeSize.small,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
