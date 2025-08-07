@@ -53,6 +53,8 @@ enum DisplayStatus {
   draft,
   @JsonValue('PUBLISHED')
   published,
+  @JsonValue('LIVE')
+  live,
   @JsonValue('ARCHIVED')
   archived,
 }
@@ -297,7 +299,7 @@ extension CourseExtensions on Course {
   /// Check if the course is currently available for booking
   bool get isAvailable {
     return active && 
-           displayStatus == DisplayStatus.published && 
+           (displayStatus == DisplayStatus.published || displayStatus == DisplayStatus.live) && 
            !fullyBooked &&
            (startDateTime == null || startDateTime!.isAfter(DateTime.now()));
   }
