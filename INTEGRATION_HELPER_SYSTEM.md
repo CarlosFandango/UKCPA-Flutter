@@ -9,8 +9,9 @@ The Flutter app uses a comprehensive helper system for efficient, maintainable i
 | **FormInteractionHelper** | Form filling, validation, submission | `@integration_test/FORM_HELPER_GUIDE.md` |
 | **AuthenticationFlowHelper** | User login, logout, registration flows | `@integration_test/AUTH_HELPER_GUIDE.md` |
 | **UIComponentInteractionHelper** | Dropdowns, date pickers, modals, tabs | `@integration_test/UI_COMPONENT_HELPER_GUIDE.md` |
-| **NavigationTestHelper** | Page navigation and state management | Built-in helper |
-| **AutomatedTestTemplate** | Screenshot capture and UX validation | Built-in utilities |
+| **NavigationTestHelper** | Page navigation, content verification | `@integration_test/NAVIGATION_HELPER_GUIDE.md` |
+| **AutomatedTestTemplate** | Screenshot capture, page detection, utilities | Built-in utilities |
+| **FastTestManager** | Performance optimized test batching | Legacy system (still functional) |
 
 ## Helper Usage Patterns
 
