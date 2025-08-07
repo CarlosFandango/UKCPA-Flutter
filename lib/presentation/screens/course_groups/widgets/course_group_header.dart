@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../domain/entities/course_group.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../../core/utils/text_utils.dart';
+import '../../../../core/utils/image_loader.dart' as image_utils;
 import '../../../widgets/markdown_view.dart';
 
 /// Header widget for course group detail screen showing image, name, and key information
@@ -140,24 +140,16 @@ class CourseGroupHeader extends StatelessWidget {
     final imageUrl = courseGroup.image ?? courseGroup.thumbImage;
     
     if (imageUrl != null && imageUrl.isNotEmpty) {
-      return CachedNetworkImage(
+      return image_utils.ImageLoader.forHero(
         imageUrl: imageUrl,
-        fit: BoxFit.cover,
-        alignment: courseGroup.imagePosition != null
-            ? Alignment(
-                courseGroup.imagePosition!.X,
-                courseGroup.imagePosition!.Y,
+        width: double.infinity,
+        height: 300,
+        imagePosition: courseGroup.imagePosition != null
+            ? image_utils.ImagePosition(
+                X: courseGroup.imagePosition!.X.toDouble(),
+                Y: courseGroup.imagePosition!.Y.toDouble(),
               )
-            : Alignment.center,
-        placeholder: (context, url) => Container(
-          color: theme.colorScheme.surfaceContainerHighest,
-          child: Center(
-            child: CircularProgressIndicator(
-              color: theme.colorScheme.primary,
-            ),
-          ),
-        ),
-        errorWidget: (context, url, error) => _buildFallbackImage(theme),
+            : null,
       );
     }
     

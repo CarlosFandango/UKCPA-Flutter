@@ -248,16 +248,13 @@ class _CourseGroupDiscoveryScreenState extends ConsumerState<CourseGroupDiscover
                           ),
                         ),
 
-                      // Course Groups Grid
+                      // Course Groups Grid - Remove padding to let grid handle responsive padding
                       SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: CourseGroupGrid(
-                            courseGroups: _filterCourseGroups(term.courseGroups),
-                            onCourseGroupTap: (courseGroup) {
-                              _navigateToCourseGroupDetail(courseGroup.id);
-                            },
-                          ),
+                        child: CourseGroupGrid(
+                          courseGroups: _filterCourseGroups(term.courseGroups),
+                          onCourseGroupTap: (courseGroup) {
+                            _navigateToCourseGroupDetail(courseGroup.id);
+                          },
                         ),
                       ),
 

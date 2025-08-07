@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../domain/entities/basket.dart';
 import '../../../../core/utils/text_utils.dart';
+import '../../../../core/utils/image_loader.dart' as image_utils;
 import '../../../screens/course_groups/widgets/course_type_badge.dart';
 
 /// Card widget for displaying a basket item
@@ -52,17 +53,11 @@ class BasketItemCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: item.course.image != null
-                      ? ClipRRect(
+                      ? image_utils.ImageLoader.forThumbnail(
+                          imageUrl: item.course.image,
+                          width: 60,
+                          height: 60,
                           borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            item.course.image!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Icon(
-                              Icons.school,
-                              color: theme.colorScheme.primary,
-                              size: 24,
-                            ),
-                          ),
                         )
                       : Icon(
                           Icons.school,

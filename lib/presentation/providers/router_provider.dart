@@ -12,6 +12,7 @@ import '../screens/basket/basket_screen.dart';
 import '../screens/checkout/checkout_screen.dart';
 import '../screens/account/account_screen.dart';
 import '../screens/account/orders_screen.dart';
+import '../../debug/image_debug_screen.dart';
 import 'auth_provider.dart';
 
 /// Router provider with auth-aware navigation
@@ -116,6 +117,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+      GoRoute(
+        path: '/debug/images',
+        builder: (context, state) => const ImageDebugScreen(),
+      ),
     ],
     errorBuilder: (context, state) => AppNotFoundPage(
       error: state.error?.toString(),
@@ -146,6 +151,7 @@ bool _isProtectedRoute(String route) {
     '/auth/login',
     '/auth/register',
     '/basket', // Basket can be used by guests
+    '/debug/images', // Debug routes for testing
   ];
   
   // Protected routes require authentication
@@ -319,6 +325,7 @@ bool _isValidInternalPath(String path) {
     '/checkout',
     '/account',
     '/account/orders',
+    '/debug/images',
   ];
   
   // Check exact matches

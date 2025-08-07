@@ -9,7 +9,7 @@ import 'widgets/courses_within_group_list.dart';
 import 'widgets/course_within_group_card.dart';
 import '../../../domain/entities/course_group.dart';
 import '../../../domain/entities/course.dart';
-import '../../../core/utils/image_loader.dart';
+import '../../../core/utils/image_loader.dart' as image_utils;
 
 /// Course Group Detail Screen - Display course group info and individual courses within the group
 class CourseGroupDetailScreen extends ConsumerWidget {
@@ -264,7 +264,7 @@ class CourseGroupDetailScreen extends ConsumerWidget {
       borderRadius: BorderRadius.circular(12),
       child: Stack(
         children: [
-          ImageLoader.forHero(
+          image_utils.ImageLoader.forHero(
             imageUrl: courseGroup.image,
             width: double.infinity,
             height: 200,
