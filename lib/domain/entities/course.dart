@@ -51,12 +51,10 @@ enum AttendanceType {
 enum DisplayStatus {
   @JsonValue('DRAFT')
   draft,
-  @JsonValue('PUBLISHED')
-  published,
+  @JsonValue('PREVIEW')
+  preview,
   @JsonValue('LIVE')
   live,
-  @JsonValue('ARCHIVED')
-  archived,
 }
 
 /// Course list display styles
@@ -299,7 +297,7 @@ extension CourseExtensions on Course {
   /// Check if the course is currently available for booking
   bool get isAvailable {
     return active && 
-           (displayStatus == DisplayStatus.published || displayStatus == DisplayStatus.live) && 
+           displayStatus == DisplayStatus.live && 
            !fullyBooked &&
            (startDateTime == null || startDateTime!.isAfter(DateTime.now()));
   }
