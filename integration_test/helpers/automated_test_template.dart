@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -166,17 +168,35 @@ class AutomatedTestTemplate {
   }
   
   /// Take a screenshot for UX reports (always captures)
+  /// This method uses the proper cross-platform approach for integration test screenshots
   static Future<void> takeUXScreenshot(
     WidgetTester tester,
     String name,
   ) async {
     try {
+      // Ensure UI is fully settled before screenshot
+      await tester.pumpAndSettle(const Duration(milliseconds: 500));
+      
       final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+      
+      // Handle platform-specific requirements
+      if (!kIsWeb && Platform.isAndroid) {
+        // Android requires surface conversion before screenshot
+        await binding.convertFlutterSurfaceToImage();
+        await tester.pumpAndSettle();
+      }
+      
+      // Take the screenshot
       await binding.takeScreenshot(name);
+      
       print('📸 UX Screenshot captured: $name');
-      print('   Location: build/screenshots/$name.png');
+      print('   Will be saved to: build/screenshots/$name.png');
+      print('   Run test with: flutter drive --driver=test_driver/integration_test.dart --target=integration_test/flows/course_group_ux_review_test.dart');
+      
     } catch (e) {
       print('📸 UX Screenshot failed: $e');
+      print('   Note: Screenshots require running with flutter drive command');
+      print('   Example: flutter drive --driver=test_driver/integration_test.dart --target=integration_test/flows/course_group_ux_review_test.dart');
     }
   }
 }

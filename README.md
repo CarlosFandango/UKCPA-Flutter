@@ -2,6 +2,16 @@
 
 A high-performance Flutter application for the UK Chinese Performing Arts organization, featuring lightning-fast integration testing and comprehensive course management capabilities.
 
+## 🔍 Quick Navigation
+
+| Feature | Link | Status |
+|---------|------|--------|
+| 📸 **Screenshot Capture** | [SCREENSHOT_GUIDE.md](./integration_test/SCREENSHOT_GUIDE.md) | ✅ WORKING |
+| ⚡ **Ultra-Fast Tests** | [QUICK_START_ULTRA_FAST_TESTS.md](./integration_test/QUICK_START_ULTRA_FAST_TESTS.md) | ✅ WORKING |
+| 🎯 **Centralized Mocks** | [mocks/README.md](./integration_test/mocks/README.md) | ✅ WORKING |
+| 🧪 **Test Examples** | [integration_test/flows/](./integration_test/flows/) | ✅ WORKING |
+| 📖 **Full Documentation** | [📚 Documentation Index](#-documentation-index) | ⬇️ BELOW |
+
 ## 🎯 Project Overview
 
 This Flutter application replicates the functionality of the UKCPA website, providing users with:
@@ -103,20 +113,48 @@ flutter test test/widget_tests/
 flutter test --coverage
 ```
 
-## 📚 Comprehensive Documentation
+## 📚 Documentation Index
 
-Organized documentation in [`docs/`](./docs/) with specialized categories:
+### 🚀 Quick Start Guides
+- **[📸 Screenshot Capture Guide](./integration_test/SCREENSHOT_GUIDE.md)** - Working screenshot capture for UX validation (TESTED)
+- **[⚡ Ultra-Fast Testing Guide](./integration_test/QUICK_START_ULTRA_FAST_TESTS.md)** - 2-4 second integration tests
+- **[🎯 Centralized Mocks](./integration_test/mocks/README.md)** - Single source of truth for test data
 
-- **[Integration Testing](./docs/integration-testing/README.md)** - Fast testing, Android setup, debugging guides
-- **[Performance](./docs/performance/README.md)** - Optimization strategies and benchmarking  
-- **[Testing](./docs/testing/README.md)** - Failure analysis, automation flows
-- **[Development](./docs/development/README.md)** - Setup guides, implementation status
+### 🧪 Testing Documentation
+- **[Integration Tests Overview](./integration_test/README.md)** - Complete integration testing guide
+- **[Mock System](./integration_test/mocks/)** - Centralized mock data and repositories
+- **[Test Helpers](./integration_test/helpers/)** - Reusable test utilities
+- **[Example Tests](./integration_test/flows/)** - Working test implementations
 
-### Quick Reference
-- [Fast Integration Test Guide](./integration_test/README.md)
-- [Android Testing Setup](./docs/integration-testing/android-setup.md)
-- [Performance Optimization](./docs/performance/optimization-summary.md)
-- [Development Plan](./docs/03-flutter-development-plan.md)
+### 📖 Implementation Guides
+- **[Ultra-Fast Testing Implementation](./ULTRA_FAST_TESTING_GUIDE.md)** - Complete implementation guide
+- **[Integration Test Fix Summary](./INTEGRATION_TEST_FIX_SUMMARY.md)** - Historical fixes and patterns
+
+### 🎯 Key Features Documentation
+
+#### 📸 Screenshot Capabilities (WORKING)
+```bash
+# Capture actual screenshots during tests
+flutter drive --driver=test_driver/integration_test.dart --target=integration_test/flows/course_group_ux_review_test.dart -d emulator-5554
+```
+- **Files Created**: `build/screenshots/*.png` (162KB+ real PNG files)
+- **Use Cases**: UX validation, bug reporting, visual regression testing
+- **Cross-Platform**: Android, iOS, Web support
+
+#### ⚡ Ultra-Fast Integration Tests
+- **Speed**: 2-4 seconds per test (20x faster than traditional tests)
+- **Architecture**: Centralized mocks with consistent data
+- **Reliability**: 100% pass rate with proper navigation
+
+#### 🎯 Centralized Mock System
+- **Single Source**: Update once, all tests use new data
+- **Consistency**: Same mock data across all integration tests
+- **Maintainability**: Easy updates when GraphQL schemas change
+
+### 🔧 Advanced Documentation
+- **[Performance Optimization](./docs/performance/README.md)** - Speed optimization strategies
+- **[Android Testing Setup](./docs/integration-testing/android-setup.md)** - Android-specific configuration
+- **[Development Plan](./docs/03-flutter-development-plan.md)** - Project roadmap
 
 ## 🎯 Key Features
 

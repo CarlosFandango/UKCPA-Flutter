@@ -275,3 +275,17 @@ await MockedFastTestManager.initializeMocked(tester);
 - **Standard mode**: Realistic delays (~100ms responses)
 
 This centralized system ensures consistency while maintaining the speed benefits of mocked integration tests.
+
+## 📸 Screenshot Integration
+
+The centralized mock system works seamlessly with screenshot capture for UX validation.
+
+**📖 See**: `@integration_test/SCREENSHOT_GUIDE.md` for complete documentation.
+
+**Quick Reference**:
+```bash
+# Run mocked tests with screenshots
+flutter drive --driver=test_driver/integration_test.dart --target=integration_test/flows/course_group_ux_review_test.dart -d emulator-5554
+```
+
+Screenshots show UI populated with consistent mock data, enabling reliable visual validation of UX issues.

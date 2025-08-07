@@ -156,7 +156,7 @@ expect(found, isTrue); // ✅
 - **Course Discovery:** `ultra_fast_course_discovery_test.dart` (27s for 7 tests)
 - **Pattern:** Works for any feature requiring backend data
 
-## 📸 Page Detection & Screenshots (NEW!)
+## 📸 Page Detection & Screenshots
 
 ### Automatic Page Detection
 ```dart
@@ -172,13 +172,11 @@ await AutomatedTestTemplate.logPageInfo(tester, 'Target Page Name');
 
 ### Screenshot Capture
 ```dart
-// For UX/UI documentation (always captures)
+// For UX/UI documentation
 await AutomatedTestTemplate.takeUXScreenshot(tester, 'screenshot_name');
-// Screenshots saved to: build/screenshots/
-
-// For regular tests (respects fast mode)
-await AutomatedTestTemplate.takeScreenshot(tester, 'screenshot_name', inFastMode: false);
 ```
+
+**📖 Complete Guide**: See `@integration_test/SCREENSHOT_GUIDE.md` for full screenshot documentation including working commands and setup.
 
 ## 🆘 When You Need Help
 
