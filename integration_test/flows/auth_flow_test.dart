@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import '../helpers/navigation_test_helper.dart';
+import '../helpers/form_interaction_helper.dart';
 import '../helpers/fast_test_manager.dart';
 import '../helpers/automated_test_template.dart';
 import '../fixtures/test_credentials.dart';
@@ -24,64 +25,74 @@ void main() {
       },
 
       'should validate email format quickly': (tester) async {
-        // Enter invalid email
-        await AutomatedTestTemplate.enterText(
+        // Fill form with invalid email and submit
+        final result = await FormInteractionHelper.fillAndSubmitForm(
           tester,
-          key: const Key('email-field'),
-          text: TestCredentials.malformedEmail,
+          {
+            'email-field': TestCredentials.malformedEmail,
+          },
+          submitButtonText: 'Sign In',
+          validationWait: const Duration(milliseconds: 500),
         );
         
-        // Try to submit
-        await AutomatedTestTemplate.tapButton(tester, 'Sign In');
-        await tester.pump(const Duration(milliseconds: 500)); // Reduced wait
-        
-        // Should show validation error or stay on login
+        // Should show validation error or submission should fail
+        expect(result.hasErrors || !result.submitSuccess, isTrue);
         expect(find.text('Sign in to your account'), findsOneWidget);
         print('✅ Email validation test complete');
       },
 
       'should require password quickly': (tester) async {
-        // Clear and enter only email
-        await tester.enterText(find.byKey(const Key('email-field')), TestCredentials.validEmail);
-        await tester.enterText(find.byKey(const Key('password-field')), ''); // Empty password
+        // Fill form with email but empty password
+        final result = await FormInteractionHelper.fillAndSubmitForm(
+          tester,
+          {
+            'email-field': TestCredentials.validEmail,
+            'password-field': '', // Empty password
+          },
+          submitButtonText: 'Sign In',
+          validationWait: const Duration(milliseconds: 500),
+        );
         
-        // Try to submit
-        await AutomatedTestTemplate.tapButton(tester, 'Sign In');
-        await tester.pump(const Duration(milliseconds: 500)); // Reduced wait
-        
-        // Should stay on login screen
+        // Should show validation error or submission should fail
+        expect(result.hasErrors || !result.submitSuccess, isTrue);
         expect(find.text('Sign in to your account'), findsOneWidget);
         print('✅ Password requirement test complete');
       },
 
       'should show error with invalid credentials quickly': (tester) async {
-        // Enter invalid credentials
-        await tester.enterText(find.byKey(const Key('email-field')), TestCredentials.invalidEmail);
-        await tester.enterText(find.byKey(const Key('password-field')), TestCredentials.invalidPassword);
+        // Fill form with invalid credentials and submit
+        final result = await FormInteractionHelper.fillAndSubmitForm(
+          tester,
+          {
+            'email-field': TestCredentials.invalidEmail,
+            'password-field': TestCredentials.invalidPassword,
+          },
+          submitButtonText: 'Sign In',
+          submitWait: const Duration(seconds: 1),
+        );
         
-        // Submit and wait briefly for network
-        await AutomatedTestTemplate.tapButton(tester, 'Sign In');
-        await tester.pump(const Duration(seconds: 1)); // Reduced from longer waits
-        
-        // Should show error or stay on login
+        // Should show error or submission should fail
+        expect(result.hasErrors || !result.submitSuccess, isTrue);
         expect(find.text('Sign in to your account'), findsOneWidget);
         print('✅ Invalid credentials test complete');
       },
 
       'should login successfully with valid credentials': (tester) async {
-        // Clear fields first
-        await tester.enterText(find.byKey(const Key('email-field')), '');
-        await tester.enterText(find.byKey(const Key('password-field')), '');
+        // Clear form and fill with valid credentials
+        await FormInteractionHelper.clearForm(tester, ['email-field', 'password-field']);
         
-        // Enter valid credentials
-        await tester.enterText(find.byKey(const Key('email-field')), TestCredentials.validEmail);
-        await tester.enterText(find.byKey(const Key('password-field')), TestCredentials.validPassword);
+        final result = await FormInteractionHelper.fillAndSubmitForm(
+          tester,
+          {
+            'email-field': TestCredentials.validEmail,
+            'password-field': TestCredentials.validPassword,
+          },
+          submitButtonText: 'Sign In',
+          submitWait: const Duration(seconds: 2),
+        );
         
-        // Submit
-        await AutomatedTestTemplate.tapButton(tester, 'Sign In');
-        await tester.pumpAndSettle(const Duration(seconds: 2)); // Reduced from 8+ seconds
-        
-        // Should navigate away from login
+        // Should successfully submit and navigate away from login
+        expect(result.submitSuccess, isTrue);
         expect(find.text('Sign in to your account'), findsNothing);
         
         // Should show post-login content
