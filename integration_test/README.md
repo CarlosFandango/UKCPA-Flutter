@@ -26,6 +26,8 @@ flutter test integration_test/flows/course_group_ux_review_test.dart -d emulator
 | **UIComponentInteractionHelper** | Dropdowns, modals, date pickers, tabs | `UI_COMPONENT_HELPER_GUIDE.md` |
 | **NavigationTestHelper** | Page navigation, content verification | `NAVIGATION_HELPER_GUIDE.md` |
 | **AutomatedTestTemplate** | Screenshot capture, page detection, utilities | `AUTOMATED_TEST_TEMPLATE_GUIDE.md` |
+| **AssertionHelper** | Common assertion patterns, validation | `ASSERTION_HELPER_GUIDE.md` |
+| **ErrorStateTestingHelper** | Error scenarios, failure simulation | `ERROR_STATE_TESTING_GUIDE.md` |
 | **FastTestManager** | Performance optimized test batching | Legacy system (still functional) |
 
 ### Helper Benefits
@@ -205,11 +207,13 @@ testWidgets('Course page UX review', (tester) async {
 
 | Test Type | Primary Helper | Secondary Helper | Utilities | Example |
 |-----------|---------------|------------------|-----------|---------|
-| **Authentication** | AuthenticationFlowHelper | NavigationTestHelper | AutomatedTestTemplate | User login/logout flows |
-| **Forms** | FormInteractionHelper | AuthenticationFlowHelper | NavigationTestHelper | Registration, booking forms |
-| **UI Components** | UIComponentInteractionHelper | NavigationTestHelper | AutomatedTestTemplate | Dropdowns, date pickers, modals |
-| **Navigation** | NavigationTestHelper | AutomatedTestTemplate | - | Page content verification |
-| **UX Validation** | All helpers combined | AutomatedTestTemplate | Screenshot capture | Comprehensive UX reviews |
+| **Authentication** | AuthenticationFlowHelper | NavigationTestHelper | AssertionHelper | User login/logout flows |
+| **Forms** | FormInteractionHelper | AuthenticationFlowHelper | AssertionHelper | Registration, booking forms |
+| **UI Components** | UIComponentInteractionHelper | NavigationTestHelper | AssertionHelper | Dropdowns, date pickers, modals |
+| **Navigation** | NavigationTestHelper | AutomatedTestTemplate | AssertionHelper | Page content verification |
+| **UX Validation** | All helpers combined | AutomatedTestTemplate | AssertionHelper | Comprehensive UX reviews |
+| **Error Testing** | ErrorStateTestingHelper | AssertionHelper | All helpers | Network errors, form validation |
+| **Assertions** | AssertionHelper | All test helpers | - | Course visibility, auth state |
 | **Debugging** | AutomatedTestTemplate | NavigationTestHelper | All helpers | Page detection, screenshots |
 
 ### Writing Helper-Based Tests
@@ -318,6 +322,8 @@ flutter test integration_test/flows/auth_flow_test.dart -d emulator-5554
 - `UI_COMPONENT_HELPER_GUIDE.md` - UIComponentInteractionHelper for complex components
 - `NAVIGATION_HELPER_GUIDE.md` - NavigationTestHelper for page navigation and content verification
 - `AUTOMATED_TEST_TEMPLATE_GUIDE.md` - AutomatedTestTemplate for screenshots, page detection, utilities
+- `ASSERTION_HELPER_GUIDE.md` - AssertionHelper for common assertion patterns and validation
+- `ERROR_STATE_TESTING_GUIDE.md` - ErrorStateTestingHelper for error scenarios and failure simulation
 - `INTEGRATION_HELPER_SYSTEM.md` - Complete system overview and development guidelines
 - `test_credentials.dart` - Authentication credentials and test data
 
@@ -328,6 +334,8 @@ flutter test integration_test/flows/auth_flow_test.dart -d emulator-5554
 - **Authentication flows?** Check `AUTH_HELPER_GUIDE.md`
 - **Form-heavy tests?** Reference `FORM_HELPER_GUIDE.md`
 - **Complex UI components?** Use `UI_COMPONENT_HELPER_GUIDE.md`
+- **Validation & assertions?** See `ASSERTION_HELPER_GUIDE.md`
+- **Error scenario testing?** Check `ERROR_STATE_TESTING_GUIDE.md`
 - **Screenshots & debugging?** See `AUTOMATED_TEST_TEMPLATE_GUIDE.md`
 
 ### 2. Basic Test Template
