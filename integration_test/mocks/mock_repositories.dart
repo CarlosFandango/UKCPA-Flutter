@@ -7,9 +7,11 @@
 import 'package:mockito/mockito.dart';
 import 'package:ukcpa_flutter/domain/repositories/auth_repository.dart';
 import 'package:ukcpa_flutter/domain/repositories/terms_repository.dart';
+import 'package:ukcpa_flutter/domain/repositories/basket_repository.dart';
 import 'package:ukcpa_flutter/domain/entities/user.dart';
 import 'package:ukcpa_flutter/domain/entities/term.dart';
 import 'package:ukcpa_flutter/domain/entities/course_group.dart';
+import 'package:ukcpa_flutter/domain/entities/basket.dart';
 import 'mock_data_factory.dart';
 
 // ============================================================================
@@ -188,6 +190,158 @@ class MockTermsRepository extends Mock implements TermsRepository {
 }
 
 // ============================================================================
+// BASKET REPOSITORY MOCK
+// ============================================================================
+
+/// Mock Basket Repository using centralized data factory
+class MockBasketRepository extends Mock implements BasketRepository {
+  
+  @override
+  Future<Basket?> getBasket() async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.dataLoadDelay);
+    }
+    
+    if (MockConfig.simulateNetworkErrors) {
+      throw MockDataFactory.createNetworkError();
+    }
+    
+    if (MockConfig.simulateServerErrors) {
+      throw MockDataFactory.createServerError();
+    }
+    
+    if (MockConfig.returnEmptyData) {
+      return MockDataFactory.emptyBasket;
+    }
+    
+    // Return basket with items by default
+    return MockDataFactory.basketWithItems;
+  }
+  
+  @override
+  Future<Basket> initBasket() async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.quickOperationDelay);
+    }
+    
+    if (MockConfig.simulateNetworkErrors) {
+      throw MockDataFactory.createNetworkError();
+    }
+    
+    return MockDataFactory.emptyBasket;
+  }
+  
+  @override
+  Future<BasketOperationResult> addItem(
+    String itemId, {
+    required String itemType,
+    bool? payDeposit,
+    String? assignToUserId,
+    DateTime? chargeFromDate,
+  }) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.quickOperationDelay);
+    }
+    
+    if (MockConfig.simulateNetworkErrors) {
+      throw MockDataFactory.createNetworkError();
+    }
+    
+    if (MockConfig.simulateServerErrors) {
+      return MockDataFactory.failedAddResult;
+    }
+    
+    return MockDataFactory.successfulAddResult;
+  }
+  
+  @override
+  Future<BasketOperationResult> removeItem(String itemId, String itemType) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.quickOperationDelay);
+    }
+    
+    if (MockConfig.simulateNetworkErrors) {
+      throw MockDataFactory.createNetworkError();
+    }
+    
+    return MockDataFactory.createBasketOperationResult(
+      success: true,
+      basket: MockDataFactory.emptyBasket,
+      message: 'Item removed successfully',
+    );
+  }
+  
+  @override
+  Future<bool> destroyBasket() async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.quickOperationDelay);
+    }
+    
+    if (MockConfig.simulateNetworkErrors) {
+      throw MockDataFactory.createNetworkError();
+    }
+    
+    return !MockConfig.simulateServerErrors;
+  }
+  
+  @override
+  Future<BasketOperationResult> applyPromoCode(String code) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.quickOperationDelay);
+    }
+    
+    if (MockConfig.simulateNetworkErrors) {
+      throw MockDataFactory.createNetworkError();
+    }
+    
+    if (code == 'INVALID' || MockConfig.simulateServerErrors) {
+      return MockDataFactory.createBasketOperationResult(
+        success: false,
+        basket: MockDataFactory.emptyBasket,
+        message: 'Invalid promo code',
+        errorCode: 'INVALID_PROMO',
+      );
+    }
+    
+    return MockDataFactory.createBasketOperationResult(
+      success: true,
+      basket: MockDataFactory.basketWithDiscounts,
+      message: 'Promo code applied successfully',
+    );
+  }
+  
+  @override
+  Future<BasketOperationResult> useCreditForBasket(bool useCredit) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.quickOperationDelay);
+    }
+    
+    if (MockConfig.simulateNetworkErrors) {
+      throw MockDataFactory.createNetworkError();
+    }
+    
+    final basket = useCredit 
+        ? MockDataFactory.basketWithDiscounts
+        : MockDataFactory.basketWithItems;
+        
+    return MockDataFactory.createBasketOperationResult(
+      success: true,
+      basket: basket,
+      message: useCredit ? 'Credit applied' : 'Credit removed',
+    );
+  }
+  
+  @override
+  Stream<Basket?> watchBasket() {
+    // Return a stream that emits the current basket periodically
+    return Stream.periodic(
+      const Duration(milliseconds: 100),
+      (count) => MockDataFactory.basketWithItems,
+    ).take(1);
+  }
+}
+
+// ============================================================================
 // COURSE REPOSITORY MOCK (Future Extension)
 // ============================================================================
 
@@ -205,6 +359,7 @@ class MockCourseRepository {
 class MockRepositoryFactory {
   static MockAuthRepository? _authRepository;
   static MockTermsRepository? _termsRepository;
+  static MockBasketRepository? _basketRepository;
   
   /// Get or create mock auth repository
   static MockAuthRepository getAuthRepository() {
@@ -216,10 +371,16 @@ class MockRepositoryFactory {
     return _termsRepository ??= MockTermsRepository();
   }
   
+  /// Get or create mock basket repository
+  static MockBasketRepository getBasketRepository() {
+    return _basketRepository ??= MockBasketRepository();
+  }
+  
   /// Reset all repository instances (useful for test isolation)
   static void resetAll() {
     _authRepository = null;
     _termsRepository = null;
+    _basketRepository = null;
   }
   
   /// Configure all repositories for specific test scenarios
