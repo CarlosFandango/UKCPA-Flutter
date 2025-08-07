@@ -6,8 +6,10 @@
 
 import 'package:ukcpa_flutter/domain/entities/user.dart';
 import 'package:ukcpa_flutter/domain/entities/term.dart';
+import 'package:ukcpa_flutter/domain/entities/course.dart';
 import 'package:ukcpa_flutter/domain/entities/course_group.dart';
 import 'package:ukcpa_flutter/domain/entities/course_session.dart';
+import 'package:ukcpa_flutter/domain/entities/basket.dart';
 import 'package:ukcpa_flutter/domain/repositories/auth_repository.dart';
 
 /// Central factory for creating consistent mock data across all tests
@@ -203,6 +205,235 @@ class MockDataFactory {
       ),
     ];
   }
+  
+  // ============================================================================
+  // COURSE DATA  
+  // ============================================================================
+  
+  /// Create a mock course
+  static Course createCourse({
+    String? id,
+    String? name,
+    String? shortDescription,
+    String? type,
+    int? price,
+    DisplayStatus? displayStatus,
+    bool? hasTasterClasses,
+    int? tasterPrice,
+  }) {
+    return Course(
+      id: id ?? '1',
+      name: name ?? 'Test Course',
+      shortDescription: shortDescription ?? 'A test course',
+      type: type ?? 'StudioCourse',
+      price: price ?? 5000,
+      displayStatus: displayStatus ?? DisplayStatus.live,
+      hasTasterClasses: hasTasterClasses ?? false,
+      tasterPrice: tasterPrice ?? 0,
+    );
+  }
+  
+  /// Standard set of courses for testing
+  static List<Course> createStandardCourses() {
+    return [
+      createCourse(
+        id: '1',
+        name: 'Ballet Beginners',
+        shortDescription: 'Perfect for beginners',
+        price: 4500,
+        type: 'StudioCourse',
+      ),
+      createCourse(
+        id: '2', 
+        name: 'Jazz Intermediate',
+        shortDescription: 'Intermediate jazz dance',
+        price: 5000,
+        type: 'StudioCourse',
+      ),
+      createCourse(
+        id: '3',
+        name: 'Online Contemporary',
+        shortDescription: 'Contemporary dance online',
+        price: 3000,
+        type: 'OnlineCourse',
+      ),
+      createCourse(
+        id: '4',
+        name: 'Hip Hop Taster',
+        shortDescription: 'Try hip hop dancing',
+        price: 2000,
+        tasterPrice: 2000,
+        hasTasterClasses: true,
+        type: 'StudioCourse',
+      ),
+    ];
+  }
+  
+  // ============================================================================
+  // BASKET DATA
+  // ============================================================================
+  
+  /// Create a mock basket item
+  static BasketItem createBasketItem({
+    String? id,
+    Course? course,
+    int? price,
+    int? totalPrice,
+    bool? isTaster,
+    int? discountValue,
+    int? promoCodeDiscountValue,
+  }) {
+    return BasketItem(
+      id: id ?? '1',
+      course: course ?? createCourse(),
+      price: price ?? 5000,
+      totalPrice: totalPrice ?? 5000,
+      isTaster: isTaster ?? false,
+      discountValue: discountValue ?? 0,
+      promoCodeDiscountValue: promoCodeDiscountValue ?? 0,
+    );
+  }
+  
+  /// Create a mock credit item
+  static CreditItem createCreditItem({
+    String? id,
+    String? description,
+    int? value,
+    String? code,
+  }) {
+    return CreditItem(
+      id: id ?? '1',
+      description: description ?? 'Student Discount',
+      value: value ?? 500,
+      code: code ?? 'STUDENT10',
+    );
+  }
+  
+  /// Create a mock fee item
+  static FeeItem createFeeItem({
+    String? id,
+    String? description,
+    int? value,
+    bool? optional,
+  }) {
+    return FeeItem(
+      id: id ?? '1',
+      description: description ?? 'Registration Fee',
+      value: value ?? 1000,
+      optional: optional ?? false,
+    );
+  }
+  
+  /// Create a mock basket
+  static Basket createBasket({
+    String? id,
+    List<BasketItem>? items,
+    int? total,
+    int? subTotal,
+    int? discountTotal,
+    int? promoCodeDiscountValue,
+    int? creditTotal,
+    int? chargeTotal,
+    int? payLater,
+    List<CreditItem>? creditItems,
+    List<FeeItem>? feeItems,
+  }) {
+    return Basket(
+      id: id ?? '1',
+      items: items ?? [],
+      total: total ?? 0,
+      subTotal: subTotal ?? 0,
+      discountTotal: discountTotal ?? 0,
+      promoCodeDiscountValue: promoCodeDiscountValue ?? 0,
+      creditTotal: creditTotal ?? 0,
+      chargeTotal: chargeTotal ?? total ?? 0,
+      payLater: payLater ?? 0,
+      creditItems: creditItems ?? [],
+      feeItems: feeItems ?? [],
+    );
+  }
+  
+  /// Create a mock basket operation result
+  static BasketOperationResult createBasketOperationResult({
+    required bool success,
+    Basket? basket,
+    String? message,
+    String? errorCode,
+  }) {
+    return BasketOperationResult(
+      success: success,
+      basket: basket ?? createBasket(),
+      message: message ?? (success ? 'Operation successful' : 'Operation failed'),
+      errorCode: errorCode,
+    );
+  }
+  
+  /// Standard empty basket
+  static Basket get emptyBasket => createBasket(
+    id: '1',
+    items: [],
+    total: 0,
+  );
+  
+  /// Standard basket with items
+  static Basket get basketWithItems => createBasket(
+    id: '1',
+    items: [
+      createBasketItem(
+        id: '1',
+        course: createCourse(id: '1', name: 'Ballet Beginners', price: 4500),
+        price: 4500,
+        totalPrice: 4500,
+      ),
+      createBasketItem(
+        id: '2', 
+        course: createCourse(id: '4', name: 'Hip Hop Taster', price: 2000, hasTasterClasses: true),
+        price: 2000,
+        totalPrice: 2000,
+        isTaster: true,
+      ),
+    ],
+    subTotal: 6500,
+    total: 6500,
+    chargeTotal: 6500,
+  );
+  
+  /// Standard basket with discounts
+  static Basket get basketWithDiscounts => createBasket(
+    id: '1',
+    items: [
+      createBasketItem(
+        id: '1',
+        course: createCourse(id: '1', name: 'Ballet Beginners', price: 5000),
+        price: 5000,
+        discountValue: 500,
+        promoCodeDiscountValue: 250,
+        totalPrice: 4250,
+      ),
+    ],
+    subTotal: 5000,
+    discountTotal: 500,
+    promoCodeDiscountValue: 250,
+    creditTotal: 100,
+    total: 4150,
+    chargeTotal: 4150,
+    creditItems: [createCreditItem()],
+  );
+  
+  /// Successful add to basket result
+  static BasketOperationResult get successfulAddResult => createBasketOperationResult(
+    success: true,
+    basket: basketWithItems,
+    message: 'Item added successfully',
+  );
+  
+  /// Failed add to basket result
+  static BasketOperationResult get failedAddResult => createBasketOperationResult(
+    success: false,
+    basket: emptyBasket,
+    message: 'Course is full',
+    errorCode: 'COURSE_FULL',
+  );
   
   // ============================================================================
   // RESPONSE TIMING CONFIGURATION
