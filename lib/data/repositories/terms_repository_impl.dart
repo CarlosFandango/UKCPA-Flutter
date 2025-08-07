@@ -342,9 +342,22 @@ class TermsRepositoryImpl implements TermsRepository {
       }
     }
 
+    // Handle Course ID - server returns int, we need String
+    final idValue = json['id'];
+    String courseId;
+    if (idValue is int) {
+      courseId = idValue.toString();
+      _logger.d('Converted int ID $idValue to string "$courseId"');
+    } else if (idValue is String) {
+      courseId = idValue;
+      _logger.d('Using string ID "$courseId"');
+    } else {
+      throw Exception('Course ID must be int or string, got ${idValue.runtimeType}');
+    }
+
     // Parse common course fields
     return Course(
-      id: json['id'] as String,
+      id: courseId,
       name: json['name'] as String,
       subtitle: json['subtitle'] as String?,
       ageFrom: json['ageFrom'] as int?,
@@ -362,9 +375,11 @@ class TermsRepositoryImpl implements TermsRepository {
       attendanceTypes: attendanceTypes.isNotEmpty ? attendanceTypes : [AttendanceType.adults],
       startDateTime: json['startDateTime'] != null ? DateTime.parse(json['startDateTime'] as String) : null,
       endDateTime: json['endDateTime'] != null ? DateTime.parse(json['endDateTime'] as String) : null,
-      weeks: json['weeks'] as int?,
+      weeks: json['weeks'] is String ? int.tryParse(json['weeks']) : json['weeks'] as int?,
       order: json['order'] as int?,
-      days: (json['days'] as List<dynamic>?)?.map((e) => e as String).toList(),
+      days: json['days'] is String 
+          ? [json['days'] as String] 
+          : (json['days'] as List<dynamic>?)?.map((e) => e as String).toList(),
       hasTasterClasses: json['hasTasterClasses'] as bool? ?? false,
       tasterPrice: json['tasterPrice'] as int? ?? 0,
       isAcceptingDeposits: json['isAcceptingDeposits'] as bool? ?? false,
