@@ -45,14 +45,26 @@ class BaseDetailCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: backgroundColor ?? theme.colorScheme.surface,
           borderRadius: borderRadius ?? BorderRadius.circular(16),
+          // Website-matching border styling
           border: Border.all(
-            color: theme.colorScheme.outline.withOpacity(0.2),
+            color: theme.colorScheme.outline.withOpacity(0.12),
+            width: 1,
           ),
+          // Website-matching shadow system
           boxShadow: showShadow ? [
+            // Primary shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1)
             BoxShadow(
-              color: theme.colorScheme.shadow.withOpacity(0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: Colors.black.withOpacity(0.1),
+              offset: const Offset(0, 10),
+              blurRadius: 25,
+              spreadRadius: -5,
+            ),
+            // Secondary shadow: 0 10px 10px -5px rgba(0, 0, 0, 0.04)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              offset: const Offset(0, 10),
+              blurRadius: 10,
+              spreadRadius: -5,
             ),
           ] : null,
         ),

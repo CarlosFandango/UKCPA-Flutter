@@ -3,7 +3,7 @@ import '../../../domain/entities/course_group.dart';
 import '../../../core/utils/image_loader.dart' as image_utils;
 
 /// Card widget for displaying a course group
-class CourseGroupCard extends StatelessWidget {
+class CourseGroupCard extends StatefulWidget {
   final CourseGroup courseGroup;
   final VoidCallback onTap;
 
@@ -14,28 +14,70 @@ class CourseGroupCard extends StatelessWidget {
   });
 
   @override
+  State<CourseGroupCard> createState() => _CourseGroupCardState();
+}
+
+class _CourseGroupCardState extends State<CourseGroupCard> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Card(
-      elevation: 4,
-      shadowColor: theme.colorScheme.shadow.withOpacity(0.15),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                theme.colorScheme.surface,
-                theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-              ],
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          // Website-matching hover transform: translateY(-4px)
+          transform: Matrix4.translationValues(0, _isHovered ? -4 : 0, 0),
+        decoration: BoxDecoration(
+          // Website-matching styling: borderRadius="2xl" (16px)
+          borderRadius: BorderRadius.circular(16),
+          // Website-matching shadows with hover effects
+          boxShadow: _isHovered ? [
+            // Hover primary shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              offset: const Offset(0, 20),
+              blurRadius: 40,
+              spreadRadius: -10,
             ),
+            // Hover secondary shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              offset: const Offset(0, 10),
+              blurRadius: 20,
+              spreadRadius: -5,
+            ),
+          ] : [
+            // Default primary shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              offset: const Offset(0, 10),
+              blurRadius: 25,
+              spreadRadius: -5,
+            ),
+            // Default secondary shadow: 0 10px 10px -5px rgba(0, 0, 0, 0.04)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              offset: const Offset(0, 10),
+              blurRadius: 10,
+              spreadRadius: -5,
+            ),
+          ],
+          // Website-matching border: 1px solid borderColor
+          border: Border.all(
+            color: theme.colorScheme.outline.withOpacity(0.12),
+            width: 1,
           ),
-          child: Column(
+          // Clean surface color (no gradient for better website match)
+          color: theme.colorScheme.surface,
+        ),
+        child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Image Section
@@ -64,7 +106,7 @@ class CourseGroupCard extends StatelessWidget {
                             // Match website responsive typography patterns
                             final isDesktop = constraints.maxWidth > 768;
                             return Text(
-                              courseGroup.name,
+                              widget.courseGroup.name,
                               style: isDesktop 
                                   ? theme.textTheme.titleMedium?.copyWith(
                                       fontWeight: FontWeight.bold,
@@ -88,13 +130,13 @@ class CourseGroupCard extends StatelessWidget {
                       const SizedBox(height: 4), // Responsive spacing
                       
                       // Description - Responsive visibility and sizing
-                      if (courseGroup.shortDescription != null)
+                      if (widget.courseGroup.shortDescription != null)
                         Flexible(
                           child: LayoutBuilder(
                             builder: (context, constraints) {
                               final isDesktop = constraints.maxWidth > 768;
                               return Text(
-                                courseGroup.shortDescription!,
+                                widget.courseGroup.shortDescription!,
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: theme.colorScheme.onSurface.withOpacity(0.7),
                                   fontSize: isDesktop ? 11 : 13, // Larger on mobile
@@ -119,7 +161,7 @@ class CourseGroupCard extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               // Price - Responsive sizing
-                              if (courseGroup.priceRangeDisplay != null)
+                              if (widget.courseGroup.priceRangeDisplay != null)
                                 Flexible(
                                   child: Container(
                                     padding: EdgeInsets.symmetric(
@@ -133,7 +175,7 @@ class CourseGroupCard extends StatelessWidget {
                                       ),
                                     ),
                                     child: Text(
-                                      courseGroup.priceRangeDisplay!,
+                                      widget.courseGroup.priceRangeDisplay!,
                                       style: theme.textTheme.labelSmall?.copyWith(
                                         color: theme.colorScheme.onPrimaryContainer,
                                         fontWeight: FontWeight.w600,
@@ -145,34 +187,39 @@ class CourseGroupCard extends StatelessWidget {
                               
                               SizedBox(width: isMobile ? 12 : 8), // More spacing on mobile
                               
-                              // View Course Button - Responsive
+                              // View Course Button - Website-matching styling
                               Expanded(
-                                child: ElevatedButton(
-                                  onPressed: onTap,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: theme.colorScheme.primary,
-                                    foregroundColor: theme.colorScheme.onPrimary,
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: isMobile ? 12 : 8,
-                                      vertical: isMobile ? 10 : 6, // Taller on mobile
-                                    ),
-                                    minimumSize: Size(
-                                      isMobile ? 100 : 80, // Wider on mobile
-                                      isMobile ? 36 : 28, // Taller on mobile
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(
-                                        isMobile ? 8 : 6, // More rounded on mobile
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 150),
+                                  transform: Matrix4.translationValues(0, _isHovered ? -1 : 0, 0),
+                                  child: ElevatedButton(
+                                    onPressed: widget.onTap,
+                                    style: ElevatedButton.styleFrom(
+                                      // Website-matching colors: colorScheme="yellow"
+                                      backgroundColor: const Color(0xFFECC94B), // Chakra yellow.400
+                                      foregroundColor: const Color(0xFF1A202C), // Chakra gray.800 for contrast
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: isMobile ? 12 : 8,
+                                        vertical: isMobile ? 10 : 6, // Taller on mobile
                                       ),
+                                      minimumSize: Size(
+                                        isMobile ? 100 : 80, // Wider on mobile
+                                        isMobile ? 36 : 28, // Taller on mobile
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        // Website borderRadius="lg" (8px)
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      elevation: _isHovered ? 4 : 2, // Elevated on hover
+                                      shadowColor: Colors.black.withOpacity(0.25),
                                     ),
-                                    elevation: isDesktop ? 1 : 2, // More shadow on mobile
-                                  ),
-                                  child: Text(
-                                    isMobile ? 'View Course' : 'View', // Full text on mobile
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: theme.colorScheme.onPrimary,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: isMobile ? 12 : 10, // Larger on mobile
+                                    child: Text(
+                                      isMobile ? 'View Course' : 'View', // Full text on mobile
+                                      style: theme.textTheme.labelSmall?.copyWith(
+                                        color: const Color(0xFF1A202C), // Match foregroundColor
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: isMobile ? 12 : 10, // Larger on mobile
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -190,6 +237,7 @@ class CourseGroupCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
     );
   }
 
@@ -206,15 +254,15 @@ class CourseGroupCard extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             // Course Image
-            if (courseGroup.image != null && courseGroup.image!.isNotEmpty)
+            if (widget.courseGroup.image != null && widget.courseGroup.image!.isNotEmpty)
               image_utils.ImageLoader.forCourseCard(
-                imageUrl: courseGroup.image,
+                imageUrl: widget.courseGroup.image,
                 width: double.infinity,
                 height: double.infinity,
-                imagePosition: courseGroup.imagePosition != null
+                imagePosition: widget.courseGroup.imagePosition != null
                     ? image_utils.ImagePosition(
-                        X: courseGroup.imagePosition!.X.toDouble(),
-                        Y: courseGroup.imagePosition!.Y.toDouble(),
+                        X: widget.courseGroup.imagePosition!.X.toDouble(),
+                        Y: widget.courseGroup.imagePosition!.Y.toDouble(),
                       )
                     : null,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
@@ -270,7 +318,7 @@ class CourseGroupCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              courseGroup.name,
+              widget.courseGroup.name,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withOpacity(0.5),
               ),
@@ -286,8 +334,8 @@ class CourseGroupCard extends StatelessWidget {
 
   Widget _buildLocationBadge(BuildContext context) {
     final theme = Theme.of(context);
-    final hasOnline = courseGroup.hasOnlineCourses;
-    final hasStudio = courseGroup.hasStudioCourses;
+    final hasOnline = widget.courseGroup.hasOnlineCourses;
+    final hasStudio = widget.courseGroup.hasStudioCourses;
     
     Color badgeColor;
     IconData badgeIcon;
@@ -296,7 +344,7 @@ class CourseGroupCard extends StatelessWidget {
     if (hasOnline && hasStudio) {
       badgeColor = theme.colorScheme.tertiary;
       badgeIcon = Icons.laptop_mac;
-      badgeText = courseGroup.locationDisplay ?? 'Online & Studio';
+      badgeText = widget.courseGroup.locationDisplay ?? 'Online & Studio';
     } else if (hasOnline) {
       badgeColor = theme.colorScheme.secondary;
       badgeIcon = Icons.laptop;
@@ -304,7 +352,7 @@ class CourseGroupCard extends StatelessWidget {
     } else {
       badgeColor = theme.colorScheme.primary;
       badgeIcon = Icons.location_on;
-      badgeText = courseGroup.locationDisplay ?? 'Studio';
+      badgeText = widget.courseGroup.locationDisplay ?? 'Studio';
     }
 
     return Container(
