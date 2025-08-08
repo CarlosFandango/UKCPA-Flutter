@@ -73,6 +73,7 @@ const String studioCourseFragment = '''
       city
       county
     }
+    displayStatus
   }
 ''';
 
@@ -135,6 +136,7 @@ const String onlineCourseFragment = '''
       meetingId
       password
     }
+    displayStatus
   }
 ''';
 
@@ -233,10 +235,4 @@ class TermInput {
   };
 }
 
-/// Display status enum values - must match server enum
-class DisplayStatus {
-  static const String draft = 'DRAFT';
-  static const String live = 'LIVE';
-  static const String published = 'PUBLISHED';
-  static const String archived = 'ARCHIVED';
-}
+// Note: DisplayStatus enum is imported from course.dart - no need to redefine here

@@ -296,10 +296,13 @@ class OnlineCourse with _$OnlineCourse {
 extension CourseExtensions on Course {
   /// Check if the course is currently available for booking
   bool get isAvailable {
-    return active && 
-           displayStatus == DisplayStatus.live && 
-           !fullyBooked &&
-           (startDateTime == null || startDateTime!.isAfter(DateTime.now()));
+    final now = DateTime.now();
+    final isActive = active;
+    final isLive = displayStatus == DisplayStatus.live;
+    final notFullyBooked = !fullyBooked;
+    final isFuture = startDateTime == null || startDateTime!.isAfter(now);
+    
+    return isActive && isLive && notFullyBooked && isFuture;
   }
 
   /// Get the effective price (current price if available, otherwise original price)

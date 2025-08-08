@@ -183,8 +183,7 @@ void main() {
         final successResult = QueryResult(
           source: QueryResultSource.network,
           data: {
-            'addToBasket': {
-              'success': true,
+            'addItem': {
               'basket': {
                 'id': 'basket-123',
                 'items': [{'id': 'item-1', 'price': 5000, 'totalPrice': 5000}],
@@ -193,8 +192,7 @@ void main() {
                 'chargeTotal': 5000,
                 'payLater': 0,
               },
-              'message': 'Item added successfully',
-              'errorCode': null,
+              'errors': null,
             }
           },
           options: QueryOptions(document: gql('')),
@@ -207,7 +205,7 @@ void main() {
 
         // Assert
         expect(result.success, true);
-        expect(result.message, 'Item added successfully');
+        expect(result.message, isNull); // No errors means success
         expect(result.basket.id, 'basket-123');
         expect(result.basket.total, 5000);
         verify(mockClient.mutate(any)).called(1);
@@ -218,8 +216,7 @@ void main() {
         final successResult = QueryResult(
           source: QueryResultSource.network,
           data: {
-            'addToBasket': {
-              'success': true,
+            'addItem': {
               'basket': {
                 'id': 'basket-123',
                 'items': [{'id': 'item-1', 'price': 2500, 'totalPrice': 2500}],
@@ -228,8 +225,7 @@ void main() {
                 'chargeTotal': 1250,
                 'payLater': 1250,
               },
-              'message': 'Taster session added with deposit',
-              'errorCode': null,
+              'errors': null,
             }
           },
           options: QueryOptions(document: gql('')),
@@ -262,8 +258,7 @@ void main() {
         final failureResult = QueryResult(
           source: QueryResultSource.network,
           data: {
-            'addToBasket': {
-              'success': false,
+            'addItem': {
               'basket': {
                 'id': 'basket-123',
                 'items': [],
@@ -272,8 +267,12 @@ void main() {
                 'chargeTotal': 0,
                 'payLater': 0,
               },
-              'message': 'Course is full',
-              'errorCode': 'COURSE_FULL',
+              'errors': [
+                {
+                  'path': 'courseID',
+                  'message': 'Course is full',
+                }
+              ],
             }
           },
           options: QueryOptions(document: gql('')),
@@ -287,7 +286,7 @@ void main() {
         // Assert
         expect(result.success, false);
         expect(result.message, 'Course is full');
-        expect(result.errorCode, 'COURSE_FULL');
+        expect(result.errorCode, 'courseID');
       });
 
       test('should throw BasketException when GraphQL error occurs', () async {
@@ -317,8 +316,7 @@ void main() {
         final successResult = QueryResult(
           source: QueryResultSource.network,
           data: {
-            'removeFromBasket': {
-              'success': true,
+            'removeItem': {
               'basket': {
                 'id': 'basket-123',
                 'items': [],
@@ -327,8 +325,7 @@ void main() {
                 'chargeTotal': 0,
                 'payLater': 0,
               },
-              'message': 'Item removed successfully',
-              'errorCode': null,
+              'errors': null,
             }
           },
           options: QueryOptions(document: gql('')),
@@ -341,7 +338,7 @@ void main() {
 
         // Assert
         expect(result.success, true);
-        expect(result.message, 'Item removed successfully');
+        expect(result.message, isNull); // No errors means success
         expect(result.basket.items, isEmpty);
         verify(mockClient.mutate(any)).called(1);
       });
@@ -373,10 +370,7 @@ void main() {
         final successResult = QueryResult(
           source: QueryResultSource.network,
           data: {
-            'destroyBasket': {
-              'success': true,
-              'message': 'Basket destroyed',
-            }
+            'destroyBasket': true,
           },
           options: QueryOptions(document: gql('')),
         );
@@ -396,10 +390,7 @@ void main() {
         final failureResult = QueryResult(
           source: QueryResultSource.network,
           data: {
-            'destroyBasket': {
-              'success': false,
-              'message': 'Failed to destroy basket',
-            }
+            'destroyBasket': false,
           },
           options: QueryOptions(document: gql('')),
         );
@@ -421,15 +412,13 @@ void main() {
           source: QueryResultSource.network,
           data: {
             'useCreditForBasket': {
-              'success': true,
               'basket': {
                 'id': 'basket-123',
                 'creditTotal': 500,
                 'total': 4500,
                 'chargeTotal': 4500,
               },
-              'message': 'Credit applied',
-              'errorCode': null,
+              'errors': null,
             }
           },
           options: QueryOptions(document: gql('')),
@@ -444,7 +433,7 @@ void main() {
         expect(result.success, true);
         expect(result.basket.creditTotal, 500);
         expect(result.basket.total, 4500);
-        expect(result.message, 'Credit applied');
+        expect(result.message, isNull);
 
         final capturedOptions = verify(mockClient.mutate(captureAny)).captured.first as MutationOptions;
         expect(capturedOptions.variables['useCredit'], true);
@@ -456,15 +445,13 @@ void main() {
           source: QueryResultSource.network,
           data: {
             'useCreditForBasket': {
-              'success': true,
               'basket': {
                 'id': 'basket-123',
                 'creditTotal': 0,
                 'total': 5000,
                 'chargeTotal': 5000,
               },
-              'message': 'Credit removed',
-              'errorCode': null,
+              'errors': null,
             }
           },
           options: QueryOptions(document: gql('')),
@@ -492,16 +479,11 @@ void main() {
           source: QueryResultSource.network,
           data: {
             'applyPromoCode': {
-              'success': true,
-              'basket': {
-                'id': 'basket-123',
-                'promoCodeDiscountValue': 250,
-                'discountTotal': 250,
-                'total': 4750,
-                'chargeTotal': 4750,
-              },
-              'message': 'Promo code applied',
-              'errorCode': null,
+              'id': 'basket-123',
+              'promoCodeDiscountValue': 250,
+              'discountTotal': 250,
+              'total': 4750,
+              'chargeTotal': 4750,
             }
           },
           options: QueryOptions(document: gql('')),
@@ -521,37 +503,21 @@ void main() {
         expect(capturedOptions.variables['code'], 'SAVE10');
       });
 
-      test('should return unsuccessful result for invalid promo code', () async {
+      test('should throw BasketException for invalid promo code', () async {
         // Arrange
-        final failureResult = QueryResult(
+        final errorResult = QueryResult(
           source: QueryResultSource.network,
-          data: {
-            'applyPromoCode': {
-              'success': false,
-              'basket': {
-                'id': 'basket-123',
-                'promoCodeDiscountValue': 0,
-                'discountTotal': 0,
-                'total': 5000,
-                'chargeTotal': 5000,
-              },
-              'message': 'Invalid promo code',
-              'errorCode': 'INVALID_PROMO',
-            }
-          },
+          data: null,
           options: QueryOptions(document: gql('')),
+          exception: OperationException(graphqlErrors: [
+            GraphQLError(message: 'Invalid promo code')
+          ]),
         );
 
-        when(mockClient.mutate(any)).thenAnswer((_) async => failureResult);
+        when(mockClient.mutate(any)).thenAnswer((_) async => errorResult);
 
-        // Act
-        final result = await repository.applyPromoCode('INVALID');
-
-        // Assert
-        expect(result.success, false);
-        expect(result.message, 'Invalid promo code');
-        expect(result.errorCode, 'INVALID_PROMO');
-        expect(result.basket.promoCodeDiscountValue, 0);
+        // Act & Assert
+        expect(() => repository.applyPromoCode('INVALID'), throwsA(isA<BasketException>()));
       });
     });
 
@@ -562,16 +528,11 @@ void main() {
           source: QueryResultSource.network,
           data: {
             'removePromoCode': {
-              'success': true,
-              'basket': {
-                'id': 'basket-123',
-                'promoCodeDiscountValue': 0,
-                'discountTotal': 0,
-                'total': 5000,
-                'chargeTotal': 5000,
-              },
-              'message': 'Promo code removed',
-              'errorCode': null,
+              'id': 'basket-123',
+              'promoCodeDiscountValue': 0,
+              'discountTotal': 0,
+              'total': 5000,
+              'chargeTotal': 5000,
             }
           },
           options: QueryOptions(document: gql('')),

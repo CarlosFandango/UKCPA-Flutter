@@ -144,21 +144,20 @@ class BasketRepositoryImpl implements BasketRepository {
       _logger.d('Adding item to basket: $itemId ($itemType)');
 
       const mutation = '''
-        mutation AddToBasket(
-          \$itemId: String!
+        mutation AddItem(
+          \$itemId: Float!
           \$itemType: String!
           \$payDeposit: Boolean
           \$assignToUserId: String
-          \$chargeFromDate: DateTime
+          \$chargeFromDate: Float
         ) {
-          addToBasket(
+          addItem(
             itemId: \$itemId
             itemType: \$itemType
             payDeposit: \$payDeposit
             assignToUserId: \$assignToUserId
             chargeFromDate: \$chargeFromDate
           ) {
-            success
             basket {
               id
               items { id price totalPrice }
@@ -167,8 +166,10 @@ class BasketRepositoryImpl implements BasketRepository {
               chargeTotal
               payLater
             }
-            message
-            errorCode
+            errors {
+              path
+              message
+            }
           }
         }
       ''';
@@ -177,11 +178,11 @@ class BasketRepositoryImpl implements BasketRepository {
         MutationOptions(
           document: gql(mutation),
           variables: {
-            'itemId': itemId,
+            'itemId': double.parse(itemId), // Convert string ID to Float
             'itemType': itemType,
             'payDeposit': payDeposit,
             'assignToUserId': assignToUserId,
-            'chargeFromDate': chargeFromDate?.toIso8601String(),
+            'chargeFromDate': chargeFromDate?.millisecondsSinceEpoch.toDouble(),
           },
           fetchPolicy: FetchPolicy.networkOnly,
         ),
@@ -192,12 +193,27 @@ class BasketRepositoryImpl implements BasketRepository {
         throw BasketException('Failed to add item to basket: ${result.exception}');
       }
 
-      final response = result.data?['addToBasket'];
+      final response = result.data?['addItem'];
       if (response == null) {
         throw const BasketException('Invalid response from server');
       }
 
-      final operationResult = BasketOperationResult.fromJson(response);
+      // Convert backend response format to expected format
+      final errors = response['errors'] as List<dynamic>?;
+      final success = errors == null || errors.isEmpty;
+      final message = errors != null && errors.isNotEmpty
+          ? errors.first['message'] as String?
+          : null;
+      
+      final operationResult = BasketOperationResult(
+        success: success,
+        basket: Basket.fromJson(response['basket']),
+        message: message,
+        errorCode: errors != null && errors.isNotEmpty
+            ? errors.first['path'] as String?
+            : null,
+      );
+      
       _logger.d('Add item result: ${operationResult.success}');
       return operationResult;
     } catch (e) {
@@ -213,9 +229,8 @@ class BasketRepositoryImpl implements BasketRepository {
       _logger.d('Removing item from basket: $itemId ($itemType)');
 
       const mutation = '''
-        mutation RemoveFromBasket(\$itemId: String!, \$itemType: String!) {
-          removeFromBasket(itemId: \$itemId, itemType: \$itemType) {
-            success
+        mutation RemoveItem(\$itemId: Float!, \$itemType: String!) {
+          removeItem(itemId: \$itemId, itemType: \$itemType) {
             basket {
               id
               items { id price totalPrice }
@@ -224,8 +239,10 @@ class BasketRepositoryImpl implements BasketRepository {
               chargeTotal
               payLater
             }
-            message
-            errorCode
+            errors {
+              path
+              message
+            }
           }
         }
       ''';
@@ -234,7 +251,7 @@ class BasketRepositoryImpl implements BasketRepository {
         MutationOptions(
           document: gql(mutation),
           variables: {
-            'itemId': itemId,
+            'itemId': double.parse(itemId), // Convert string ID to Float
             'itemType': itemType,
           },
           fetchPolicy: FetchPolicy.networkOnly,
@@ -246,12 +263,27 @@ class BasketRepositoryImpl implements BasketRepository {
         throw BasketException('Failed to remove item from basket: ${result.exception}');
       }
 
-      final response = result.data?['removeFromBasket'];
+      final response = result.data?['removeItem'];
       if (response == null) {
         throw const BasketException('Invalid response from server');
       }
 
-      final operationResult = BasketOperationResult.fromJson(response);
+      // Convert backend response format to expected format
+      final errors = response['errors'] as List<dynamic>?;
+      final success = errors == null || errors.isEmpty;
+      final message = errors != null && errors.isNotEmpty
+          ? errors.first['message'] as String?
+          : null;
+      
+      final operationResult = BasketOperationResult(
+        success: success,
+        basket: Basket.fromJson(response['basket']),
+        message: message,
+        errorCode: errors != null && errors.isNotEmpty
+            ? errors.first['path'] as String?
+            : null,
+      );
+      
       _logger.d('Remove item result: ${operationResult.success}');
       return operationResult;
     } catch (e) {
@@ -268,10 +300,7 @@ class BasketRepositoryImpl implements BasketRepository {
 
       const mutation = '''
         mutation DestroyBasket {
-          destroyBasket {
-            success
-            message
-          }
+          destroyBasket
         }
       ''';
 
@@ -287,8 +316,7 @@ class BasketRepositoryImpl implements BasketRepository {
         throw BasketException('Failed to destroy basket: ${result.exception}');
       }
 
-      final response = result.data?['destroyBasket'];
-      final success = response?['success'] as bool? ?? false;
+      final success = result.data?['destroyBasket'] as bool? ?? false;
       
       _logger.d('Destroy basket result: $success');
       return success;
@@ -307,15 +335,16 @@ class BasketRepositoryImpl implements BasketRepository {
       const mutation = '''
         mutation UseCreditForBasket(\$useCredit: Boolean!) {
           useCreditForBasket(useCredit: \$useCredit) {
-            success
             basket {
               id
               creditTotal
               total
               chargeTotal
             }
-            message
-            errorCode
+            errors {
+              path
+              message
+            }
           }
         }
       ''';
@@ -338,7 +367,22 @@ class BasketRepositoryImpl implements BasketRepository {
         throw const BasketException('Invalid response from server');
       }
 
-      final operationResult = BasketOperationResult.fromJson(response);
+      // Convert backend response format to expected format
+      final errors = response['errors'] as List<dynamic>?;
+      final success = errors == null || errors.isEmpty;
+      final message = errors != null && errors.isNotEmpty
+          ? errors.first['message'] as String?
+          : null;
+      
+      final operationResult = BasketOperationResult(
+        success: success,
+        basket: Basket.fromJson(response['basket']),
+        message: message,
+        errorCode: errors != null && errors.isNotEmpty
+            ? errors.first['path'] as String?
+            : null,
+      );
+      
       _logger.d('Credit usage result: ${operationResult.success}');
       return operationResult;
     } catch (e) {
@@ -356,16 +400,11 @@ class BasketRepositoryImpl implements BasketRepository {
       const mutation = '''
         mutation ApplyPromoCode(\$code: String!) {
           applyPromoCode(code: \$code) {
-            success
-            basket {
-              id
-              promoCodeDiscountValue
-              discountTotal
-              total
-              chargeTotal
-            }
-            message
-            errorCode
+            id
+            promoCodeDiscountValue
+            discountTotal
+            total
+            chargeTotal
           }
         }
       ''';
@@ -383,12 +422,18 @@ class BasketRepositoryImpl implements BasketRepository {
         throw BasketException('Failed to apply promo code: ${result.exception}');
       }
 
-      final response = result.data?['applyPromoCode'];
-      if (response == null) {
+      final basketData = result.data?['applyPromoCode'];
+      if (basketData == null) {
         throw const BasketException('Invalid response from server');
       }
 
-      final operationResult = BasketOperationResult.fromJson(response);
+      // Since mutation returns Basket directly, wrap it in operation result
+      final operationResult = BasketOperationResult(
+        success: true,
+        basket: Basket.fromJson(basketData),
+        message: 'Promo code applied successfully',
+      );
+      
       _logger.d('Apply promo code result: ${operationResult.success}');
       return operationResult;
     } catch (e) {
@@ -406,16 +451,11 @@ class BasketRepositoryImpl implements BasketRepository {
       const mutation = '''
         mutation RemovePromoCode {
           removePromoCode {
-            success
-            basket {
-              id
-              promoCodeDiscountValue
-              discountTotal
-              total
-              chargeTotal
-            }
-            message
-            errorCode
+            id
+            promoCodeDiscountValue
+            discountTotal
+            total
+            chargeTotal
           }
         }
       ''';
@@ -432,12 +472,18 @@ class BasketRepositoryImpl implements BasketRepository {
         throw BasketException('Failed to remove promo code: ${result.exception}');
       }
 
-      final response = result.data?['removePromoCode'];
-      if (response == null) {
+      final basketData = result.data?['removePromoCode'];
+      if (basketData == null) {
         throw const BasketException('Invalid response from server');
       }
 
-      final operationResult = BasketOperationResult.fromJson(response);
+      // Since mutation returns Basket directly, wrap it in operation result
+      final operationResult = BasketOperationResult(
+        success: true,
+        basket: Basket.fromJson(basketData),
+        message: 'Promo code removed successfully',
+      );
+      
       _logger.d('Remove promo code result: ${operationResult.success}');
       return operationResult;
     } catch (e) {

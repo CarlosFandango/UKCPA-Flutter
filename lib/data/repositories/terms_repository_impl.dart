@@ -355,6 +355,30 @@ class TermsRepositoryImpl implements TermsRepository {
       throw Exception('Course ID must be int or string, got ${idValue.runtimeType}');
     }
 
+    // Parse display status
+    DisplayStatus? displayStatus;
+    final displayStatusValue = json['displayStatus'] as String?;
+    _logger.d('🔍 Parsing course ${json['name']}: displayStatus value = "$displayStatusValue"');
+    if (displayStatusValue != null) {
+      switch (displayStatusValue) {
+        case 'DRAFT':
+          displayStatus = DisplayStatus.draft;
+          break;
+        case 'PREVIEW':
+          displayStatus = DisplayStatus.preview;
+          break;
+        case 'LIVE':
+          displayStatus = DisplayStatus.live;
+          break;
+        default:
+          _logger.w('Unknown display status: $displayStatusValue, defaulting to LIVE');
+          displayStatus = DisplayStatus.live;
+      }
+      _logger.d('✅ Set displayStatus to: $displayStatus');
+    } else {
+      _logger.w('⚠️ displayStatus is null for course ${json['name']}');
+    }
+
     // Parse common course fields
     return Course(
       id: courseId,
@@ -384,6 +408,7 @@ class TermsRepositoryImpl implements TermsRepository {
       tasterPrice: json['tasterPrice'] as int? ?? 0,
       isAcceptingDeposits: json['isAcceptingDeposits'] as bool? ?? false,
       instructions: json['instructions'] as String?,
+      displayStatus: displayStatus,
       type: json['__typename'] as String? ?? 'StudioCourse',
     );
   }

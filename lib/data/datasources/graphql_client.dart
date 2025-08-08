@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/logger.dart';
+import 'package:http/http.dart' as http;
 import '../../core/constants/app_constants.dart';
 
 GraphQLClient? _client;
@@ -10,8 +12,28 @@ final Logger _logger = Logger();
 GraphQLClient getGraphQLClient() {
   if (_client != null) return _client!;
   
+  // Platform-specific API URL
+  String apiUrl = dotenv.env['API_URL'] ?? '';
+  if (apiUrl.isEmpty) {
+    // Fallback: auto-detect platform
+    if (Platform.isIOS) {
+      apiUrl = 'http://localhost:4000/graphql';
+    } else if (Platform.isAndroid) {
+      apiUrl = 'http://10.0.2.2:4000/graphql';
+    } else {
+      apiUrl = 'http://localhost:4000/graphql';
+    }
+  }
+  
+  _logger.d('Using GraphQL API URL: $apiUrl');
+  
+  // Configure timeout
+  final timeout = int.tryParse(dotenv.env['API_TIMEOUT'] ?? '30000') ?? 30000;
+  
+  final httpClient = http.Client();
   final HttpLink httpLink = HttpLink(
-    dotenv.env['API_URL'] ?? '',
+    apiUrl,
+    httpClient: httpClient,
   );
   
   final AuthLink authLink = AuthLink(

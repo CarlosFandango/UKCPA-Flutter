@@ -63,10 +63,13 @@ class TermsNotifier extends _$TermsNotifier {
   /// Load terms with the specified display status
   Future<void> loadTerms({String displayStatus = 'LIVE'}) async {
     try {
+      print('🔄 Loading terms with displayStatus: $displayStatus');
       state = const TermsStateLoading();
       
       final repository = ref.read(termsRepositoryProvider);
       final terms = await repository.getTerms(displayStatus: displayStatus);
+      
+      print('✅ Loaded ${terms.length} terms');
       
       state = TermsStateLoaded(
         terms: terms,

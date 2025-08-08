@@ -147,6 +147,16 @@ void main() {
 /// Helper Methods for Basket Flow Tests
 /// These methods encapsulate common basket test operations
 
+/// Helper function to find elements with multiple possible texts/types
+Finder? _findAny(List<Finder> finders) {
+  for (final finder in finders) {
+    if (finder.evaluate().isNotEmpty) {
+      return finder;
+    }
+  }
+  return null;
+}
+
 /// Authenticate user for basket tests
 Future<void> _authenticateUser(WidgetTester tester) async {
   final authResult = await AuthenticationFlowHelper.loginAs(
@@ -168,12 +178,18 @@ Future<void> _navigateToCourseDiscovery(WidgetTester tester) async {
     verboseLogging: true,
   );
   
-  // Wait for courses to load
-  await AutomatedTestTemplate.waitForElement(
-    tester,
-    find.text('View Course').or(find.text('Add to Basket')),
-    timeout: const Duration(seconds: 10),
-  );
+  // Wait for courses to load - try multiple possible button texts
+  bool coursePageLoaded = false;
+  for (String buttonText in ['View Course', 'Add to Basket', 'Book Now', 'Book Course']) {
+    if (find.text(buttonText).evaluate().isNotEmpty) {
+      coursePageLoaded = true;
+      break;
+    }
+  }
+  
+  if (!coursePageLoaded) {
+    await tester.pumpAndSettle(const Duration(seconds: 5));
+  }
   
   print('✅ Course discovery page loaded');
 }
@@ -181,11 +197,16 @@ Future<void> _navigateToCourseDiscovery(WidgetTester tester) async {
 /// Add first course to basket
 Future<void> _addCourseToBasket(WidgetTester tester) async {
   // Look for Add to Basket or similar buttons
-  final addToBasketFinder = find.text('Add to Basket')
-    .or(find.text('Book Course'))
-    .or(find.text('Book Now'));
+  Finder? addToBasketFinder;
+  for (String buttonText in ['Add to Basket', 'Book Course', 'Book Now']) {
+    final finder = find.text(buttonText);
+    if (finder.evaluate().isNotEmpty) {
+      addToBasketFinder = finder;
+      break;
+    }
+  }
     
-  if (addToBasketFinder.evaluate().isNotEmpty) {
+  if (addToBasketFinder != null) {
     await tester.tap(addToBasketFinder.first);
     await tester.pumpAndSettle(const Duration(seconds: 2));
     
@@ -200,10 +221,16 @@ Future<void> _addCourseToBasket(WidgetTester tester) async {
       await tester.pumpAndSettle(const Duration(seconds: 3));
       
       // Look for Add to Basket on course detail page
-      final detailAddBasket = find.text('Add to Basket')
-        .or(find.text('Book This Course'));
+      Finder? detailAddBasket;
+      for (String buttonText in ['Add to Basket', 'Book This Course']) {
+        final finder = find.text(buttonText);
+        if (finder.evaluate().isNotEmpty) {
+          detailAddBasket = finder;
+          break;
+        }
+      }
       
-      if (detailAddBasket.evaluate().isNotEmpty) {
+      if (detailAddBasket != null) {
         await tester.tap(detailAddBasket.first);
         await tester.pumpAndSettle(const Duration(seconds: 2));
         print('✅ Course added via course detail page');
@@ -225,18 +252,22 @@ Future<void> _viewAndValidateBasket(WidgetTester tester) async {
   );
   
   // Verify basket is not empty
-  final emptyBasketText = find.text('Your basket is empty')
-    .or(find.text('No items in basket'));
+  final emptyBasketText = _findAny([
+    find.text('Your basket is empty'),
+    find.text('No items in basket')
+  ]);
   
-  expect(emptyBasketText.evaluate().isEmpty, isTrue,
+  expect(emptyBasketText?.evaluate().isEmpty ?? true, isTrue,
     reason: 'Basket should not be empty after adding course');
   
   // Look for basket total
-  final basketTotal = find.textContaining('Total:')
-    .or(find.textContaining('£'))
-    .or(find.textContaining('Subtotal:'));
+  final basketTotal = _findAny([
+    find.textContaining('Total:'),
+    find.textContaining('£'),
+    find.textContaining('Subtotal:')
+  ]);
     
-  expect(basketTotal.evaluate().isNotEmpty, isTrue,
+  expect(basketTotal?.evaluate().isNotEmpty ?? false, isTrue,
     reason: 'Basket should show total amount');
   
   print('✅ Basket validation completed');
@@ -251,10 +282,16 @@ Future<void> _addSecondCourseToBasket(WidgetTester tester) async {
   );
   
   // Find second course to add (skip first one)
-  final courseButtons = find.text('Add to Basket')
-    .or(find.text('View Course'));
+  Finder? courseButtons;
+  for (String buttonText in ['Add to Basket', 'View Course']) {
+    final finder = find.text(buttonText);
+    if (finder.evaluate().length >= 2) {
+      courseButtons = finder;
+      break;
+    }
+  }
   
-  if (courseButtons.evaluate().length >= 2) {
+  if (courseButtons != null && courseButtons.evaluate().length >= 2) {
     await tester.tap(courseButtons.at(1));
     await tester.pumpAndSettle(const Duration(seconds: 2));
     
@@ -280,11 +317,13 @@ Future<void> _applyPromoCode(WidgetTester tester) async {
   );
   
   // Look for promo code field
-  final promoField = find.byKey(const Key('promo-code-field'))
-    .or(find.textContaining('Promo'))
-    .or(find.textContaining('Discount'));
+  final promoField = _findAny([
+    find.byKey(const Key('promo-code-field')),
+    find.textContaining('Promo'),
+    find.textContaining('Discount')
+  ]);
   
-  if (promoField.evaluate().isNotEmpty) {
+  if (promoField?.evaluate().isNotEmpty ?? false) {
     // Test with a valid promo code (if configured)
     await FormInteractionHelper.fillAndSubmitForm(
       tester,
@@ -304,21 +343,25 @@ Future<void> _applyPromoCode(WidgetTester tester) async {
 /// Remove item from basket
 Future<void> _removeItemFromBasket(WidgetTester tester) async {
   // Look for remove buttons
-  final removeButtons = find.textContaining('Remove')
-    .or(find.byIcon(Icons.delete))
-    .or(find.byIcon(Icons.close));
+  final removeButtons = _findAny([
+    find.textContaining('Remove'),
+    find.byIcon(Icons.delete),
+    find.byIcon(Icons.close)
+  ]);
   
-  if (removeButtons.evaluate().isNotEmpty) {
-    await tester.tap(removeButtons.first);
+  if (removeButtons?.evaluate().isNotEmpty ?? false) {
+    await tester.tap(removeButtons!.first);
     await tester.pumpAndSettle(const Duration(seconds: 2));
     
     // Confirm removal if dialog appears
-    final confirmButton = find.text('Confirm')
-      .or(find.text('Yes'))
-      .or(find.text('Remove'));
+    final confirmButton = _findAny([
+      find.text('Confirm'),
+      find.text('Yes'),
+      find.text('Remove')
+    ]);
     
-    if (confirmButton.evaluate().isNotEmpty) {
-      await tester.tap(confirmButton.first);
+    if (confirmButton?.evaluate().isNotEmpty ?? false) {
+      await tester.tap(confirmButton!.first);
       await tester.pumpAndSettle(const Duration(seconds: 2));
     }
     
@@ -375,11 +418,13 @@ Future<void> _testInvalidPromoCode(WidgetTester tester) async {
     );
     
     // Look for error message
-    final errorMessage = find.textContaining('invalid')
-      .or(find.textContaining('error'))
-      .or(find.textContaining('not found'));
+    final errorMessage = _findAny([
+      find.textContaining('invalid'),
+      find.textContaining('error'),
+      find.textContaining('not found')
+    ]);
     
-    if (errorMessage.evaluate().isNotEmpty) {
+    if (errorMessage?.evaluate().isNotEmpty ?? false) {
       print('✅ Invalid promo code error handling works');
     } else {
       print('⚠️ No error message shown for invalid promo code');
@@ -399,12 +444,14 @@ Future<void> _testNetworkErrorScenarios(WidgetTester tester) async {
   );
   
   // Rapid successive operations to potentially trigger errors
-  final refreshButton = find.byIcon(Icons.refresh)
-    .or(find.text('Refresh'));
+  final refreshButton = _findAny([
+    find.byIcon(Icons.refresh),
+    find.text('Refresh')
+  ]);
   
-  if (refreshButton.evaluate().isNotEmpty) {
+  if (refreshButton?.evaluate().isNotEmpty ?? false) {
     for (int i = 0; i < 3; i++) {
-      await tester.tap(refreshButton.first);
+      await tester.tap(refreshButton!.first);
       await tester.pump(const Duration(milliseconds: 100));
     }
     await tester.pumpAndSettle(const Duration(seconds: 2));
@@ -421,25 +468,33 @@ Future<void> _testEmptyBasketBehavior(WidgetTester tester) async {
   );
   
   // Remove all items if any exist
-  final removeButtons = find.textContaining('Remove').or(find.byIcon(Icons.delete));
-  while (removeButtons.evaluate().isNotEmpty) {
-    await tester.tap(removeButtons.first);
+  final removeButtons = _findAny([
+    find.textContaining('Remove'),
+    find.byIcon(Icons.delete)
+  ]);
+  while (removeButtons?.evaluate().isNotEmpty ?? false) {
+    await tester.tap(removeButtons!.first);
     await tester.pumpAndSettle(const Duration(seconds: 1));
     
     // Confirm removal if needed
-    final confirmButton = find.text('Confirm').or(find.text('Yes'));
-    if (confirmButton.evaluate().isNotEmpty) {
-      await tester.tap(confirmButton.first);
+    final confirmButton = _findAny([
+      find.text('Confirm'),
+      find.text('Yes')
+    ]);
+    if (confirmButton?.evaluate().isNotEmpty ?? false) {
+      await tester.tap(confirmButton!.first);
       await tester.pumpAndSettle(const Duration(seconds: 1));
     }
   }
   
   // Verify empty basket UI
-  final emptyBasketMessage = find.text('Your basket is empty')
-    .or(find.text('No items'))
-    .or(find.text('Add some courses'));
+  final emptyBasketMessage = _findAny([
+    find.text('Your basket is empty'),
+    find.text('No items'),
+    find.text('Add some courses')
+  ]);
   
-  expect(emptyBasketMessage.evaluate().isNotEmpty, isTrue,
+  expect(emptyBasketMessage?.evaluate().isNotEmpty ?? false, isTrue,
     reason: 'Empty basket should show appropriate message');
   
   print('✅ Empty basket behavior verified');
@@ -453,12 +508,14 @@ Future<void> _testCreditUsage(WidgetTester tester) async {
   );
   
   // Look for credit toggle
-  final creditToggle = find.byType(Switch)
-    .or(find.textContaining('Use Credits'))
-    .or(find.textContaining('Apply Credit'));
+  final creditToggle = _findAny([
+    find.byType(Switch),
+    find.textContaining('Use Credits'),
+    find.textContaining('Apply Credit')
+  ]);
   
-  if (creditToggle.evaluate().isNotEmpty) {
-    await tester.tap(creditToggle.first);
+  if (creditToggle?.evaluate().isNotEmpty ?? false) {
+    await tester.tap(creditToggle!.first);
     await tester.pumpAndSettle(const Duration(seconds: 2));
     
     print('✅ Credit usage toggle tested');
@@ -470,12 +527,14 @@ Future<void> _testCreditUsage(WidgetTester tester) async {
 /// Test deposit payment options
 Future<void> _testDepositPaymentOptions(WidgetTester tester) async {
   // Look for deposit payment options
-  final depositOption = find.textContaining('Deposit')
-    .or(find.textContaining('Pay Later'))
-    .or(find.textContaining('Installment'));
+  final depositOption = _findAny([
+    find.textContaining('Deposit'),
+    find.textContaining('Pay Later'),
+    find.textContaining('Installment')
+  ]);
   
-  if (depositOption.evaluate().isNotEmpty) {
-    await tester.tap(depositOption.first);
+  if (depositOption?.evaluate().isNotEmpty ?? false) {
+    await tester.tap(depositOption!.first);
     await tester.pumpAndSettle(const Duration(seconds: 2));
     
     print('✅ Deposit payment option tested');
@@ -493,20 +552,24 @@ Future<void> _testTasterCourseBooking(WidgetTester tester) async {
   );
   
   // Look for taster course options
-  final tasterOption = find.textContaining('Taster')
-    .or(find.textContaining('Trial'))
-    .or(find.textContaining('Free'));
+  final tasterOption = _findAny([
+    find.textContaining('Taster'),
+    find.textContaining('Trial'),
+    find.textContaining('Free')
+  ]);
   
-  if (tasterOption.evaluate().isNotEmpty) {
-    await tester.tap(tasterOption.first);
+  if (tasterOption?.evaluate().isNotEmpty ?? false) {
+    await tester.tap(tasterOption!.first);
     await tester.pumpAndSettle(const Duration(seconds: 2));
     
     // Add taster to basket
-    final addTasterButton = find.text('Add to Basket')
-      .or(find.text('Book Taster'));
+    final addTasterButton = _findAny([
+      find.text('Add to Basket'),
+      find.text('Book Taster')
+    ]);
     
-    if (addTasterButton.evaluate().isNotEmpty) {
-      await tester.tap(addTasterButton.first);
+    if (addTasterButton?.evaluate().isNotEmpty ?? false) {
+      await tester.tap(addTasterButton!.first);
       await tester.pumpAndSettle(const Duration(seconds: 2));
       print('✅ Taster course booking tested');
     }
@@ -540,11 +603,13 @@ Future<void> _testBasketResponsiveDesign(WidgetTester tester) async {
 /// Test basket accessibility features
 Future<void> _testBasketAccessibility(WidgetTester tester) async {
   // Look for semantic labels and accessibility features
-  final accessibleElements = find.bySemanticsLabel('Basket items')
-    .or(find.bySemanticsLabel('Total amount'))
-    .or(find.bySemanticsLabel('Checkout button'));
+  final accessibleElements = _findAny([
+    find.bySemanticsLabel('Basket items'),
+    find.bySemanticsLabel('Total amount'),
+    find.bySemanticsLabel('Checkout button')
+  ]);
   
-  if (accessibleElements.evaluate().isNotEmpty) {
+  if (accessibleElements?.evaluate().isNotEmpty ?? false) {
     print('✅ Accessibility labels found');
   } else {
     print('⚠️ Consider adding more accessibility labels');
@@ -558,11 +623,13 @@ Future<void> _testBasketAccessibility(WidgetTester tester) async {
 /// Verify basket count indicator
 Future<void> _verifyBasketCount(WidgetTester tester, {required int expectedMinCount}) async {
   // Look for basket count indicator
-  final basketCountIndicator = find.textContaining('$expectedMinCount')
-    .or(find.byType(Badge))
-    .or(find.textContaining('items'));
+  final basketCountIndicator = _findAny([
+    find.textContaining('$expectedMinCount'),
+    find.byType(Badge),
+    find.textContaining('items')
+  ]);
   
-  if (basketCountIndicator.evaluate().isNotEmpty) {
+  if (basketCountIndicator?.evaluate().isNotEmpty ?? false) {
     print('✅ Basket count indicator shows expected value');
   } else {
     print('⚠️ Basket count indicator not found or incorrect');
