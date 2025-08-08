@@ -46,6 +46,16 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	
+	<!-- Camera permission for card scanning -->
+	<key>NSCameraUsageDescription</key>
+	<string>Camera access is required for card scanning functionality</string>
+	
+	<!-- URL Schemes for Stripe integration -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>stripe</string>
+	</array>
+	
 	<!-- Allow HTTP traffic for images and development -->
 	<key>NSAppTransportSecurity</key>
 	<dict>

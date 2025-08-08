@@ -6,11 +6,15 @@
 
 import 'package:ukcpa_flutter/domain/entities/user.dart' hide Address;
 import 'package:ukcpa_flutter/domain/entities/term.dart';
-import 'package:ukcpa_flutter/domain/entities/course.dart';
+import 'package:ukcpa_flutter/domain/entities/course.dart' as course_entities;
 import 'package:ukcpa_flutter/domain/entities/course_group.dart';
 import 'package:ukcpa_flutter/domain/entities/course_session.dart';
 import 'package:ukcpa_flutter/domain/entities/basket.dart';
+import 'package:ukcpa_flutter/domain/entities/checkout.dart';
 import 'package:ukcpa_flutter/domain/repositories/auth_repository.dart';
+import 'package:ukcpa_flutter/services/stripe_payment_service.dart';
+import 'package:ukcpa_flutter/core/errors/payment_exception.dart';
+import 'package:flutter_stripe/flutter_stripe.dart' as stripe;
 
 /// Central factory for creating consistent mock data across all tests
 class MockDataFactory {
@@ -294,7 +298,7 @@ class MockDataFactory {
       hasTasterClasses: hasTasterClasses ?? true,
       tasterPrice: tasterPrice ?? 2500, // £25.00
       attendanceTypes: [AttendanceType.adults],
-      address: const Address(
+      address: const course_entities.Address(
         line1: '123 Dance Street',
         city: 'London',
         postCode: 'SW1 1AA',
@@ -591,49 +595,355 @@ class MockDataFactory {
   }
 }
 
+
+  // ============================================================================
+  // PAYMENT & CHECKOUT DATA
+  // ============================================================================
+
+  /// Create a mock payment method
+  static PaymentMethod createPaymentMethod({
+    String? id,
+    Address? billingAddress,
+    bool isDefault = false,
+    String? last4,
+    String? brand,
+    String? expiryMonth,
+    String? expiryYear,
+  }) {
+    return PaymentMethod(
+      id: id ?? 'pm_test123',
+      type: 'card',
+      last4: last4 ?? '4242',
+      brand: brand ?? 'visa',
+      expiryMonth: expiryMonth ?? '12',
+      expiryYear: expiryYear ?? '2025',
+      isDefault: isDefault,
+      billingAddress: billingAddress ?? createAddress(),
+      createdAt: DateTime.now(),
+    );
+  }
+
+  /// Create a mock address
+  static Address createAddress({
+    String? name,
+    String? line1,
+    String? line2,
+    String? city,
+    String? county,
+    String? postCode,
+    String? country,
+    String? countryCode,
+  }) {
+    return Address(
+      id: 'addr_test123',
+      name: name ?? 'Test User',
+      line1: line1 ?? '123 Test Street',
+      line2: line2,
+      city: city ?? 'London',
+      county: county ?? 'Greater London',
+      postCode: postCode ?? 'SW1A 1AA',
+      country: country ?? 'United Kingdom',
+      countryCode: countryCode ?? 'GB',
+    );
+  }
+
+  /// Create multiple test payment methods
+  static List<PaymentMethod> createPaymentMethods() {
+    return [
+      createPaymentMethod(
+        id: 'pm_visa',
+        last4: '4242',
+        brand: 'visa',
+        isDefault: true,
+      ),
+      createPaymentMethod(
+        id: 'pm_mastercard',
+        last4: '4444',
+        brand: 'mastercard',
+        isDefault: false,
+      ),
+    ];
+  }
+
+  /// Create Stripe publishable key
+  static String createStripePublishableKey() {
+    return 'pk_test_123456789012345678901234';
+  }
+
+  /// Create a successful payment result
+  static PaymentResult createSuccessfulPaymentResult(Basket basket) {
+    return PaymentResult(
+      success: true,
+      order: createOrder(),
+      nextAction: 'none',
+      paymentTransactionStatus: 'succeeded',
+    );
+  }
+
+  /// Create a failed payment result
+  static PaymentResult createFailedPaymentResult() {
+    return const PaymentResult(
+      success: false,
+      error: 'Payment failed',
+      errorCode: 'CARD_DECLINED',
+    );
+  }
+
+  /// Create a payment result requiring 3DS
+  static PaymentResult createRequires3DSPaymentResult() {
+    return PaymentResult(
+      success: true,
+      order: createOrder(),
+      clientSecret: 'pi_test_client_secret',
+      nextAction: 'requires_action',
+      paymentTransactionStatus: 'requires_action',
+    );
+  }
+
+  /// Create a mock order
+  static Order createOrder({
+    String? id,
+    String? userId,
+    List<OrderItem>? items,
+  }) {
+    return Order(
+      id: id ?? 'order_test123',
+      userId: userId ?? '123',
+      items: items ?? [createOrderItem()],
+      subTotal: 5000,
+      discountTotal: 500,
+      promoCodeDiscountValue: 0,
+      creditTotal: 0,
+      tax: 0,
+      total: 4500,
+      chargeTotal: 4500,
+      payLater: 0,
+      status: 'confirmed',
+      paymentMethodId: 'pm_test123',
+      paymentMethodType: 'card',
+      paymentIntentId: 'pi_test123',
+      paymentTransactionStatus: 'succeeded',
+      billingAddress: createAddress(),
+      notes: null,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  /// Create a mock order item
+  static OrderItem createOrderItem({
+    String? id,
+    String? itemId,
+    String? itemType,
+    String? itemName,
+    int? price,
+  }) {
+    return OrderItem(
+      id: id ?? 'oi_test123',
+      itemId: itemId ?? 'course_123',
+      itemType: itemType ?? 'course',
+      itemName: itemName ?? 'Ballet Beginners',
+      price: price ?? 5000,
+      totalPrice: price ?? 5000,
+      discountValue: 0,
+      promoCodeDiscountValue: 0,
+      assignToUserId: null,
+      assignToUserName: null,
+      chargeFromDate: DateTime.now(),
+      extraInfo: null,
+      createdAt: DateTime.now(),
+    );
+  }
+
+  /// Create order history
+  static List<Order> createOrderHistory({int limit = 20}) {
+    return List.generate(limit.clamp(1, 10), (index) =>
+      createOrder(
+        id: 'order_${index + 1}',
+        items: [
+          createOrderItem(
+            itemName: 'Course ${index + 1}',
+            price: 5000 + (index * 500),
+          ),
+        ],
+      )
+    );
+  }
+
+  /// Create successful PaymentIntentResult
+  static PaymentIntentResult createSuccessfulPaymentIntentResult() {
+    return PaymentIntentResult(
+      status: PaymentStatus.succeeded,
+      paymentIntentId: 'pi_test123',
+    );
+  }
+
+  /// Create failed PaymentIntentResult
+  static PaymentIntentResult createFailedPaymentIntentResult() {
+    return PaymentIntentResult(
+      status: PaymentStatus.failed,
+      errorMessage: 'Payment failed',
+    );
+  }
+
+  /// Create requires 3DS PaymentIntentResult
+  static PaymentIntentResult createRequires3DSResult() {
+    return PaymentIntentResult(
+      status: PaymentStatus.requiresAction,
+      paymentIntentId: 'pi_test123',
+      clientSecret: 'pi_test_client_secret',
+    );
+  }
+
+  /// Create successful 3DS result
+  static PaymentIntentResult createSuccessful3DSResult() {
+    return PaymentIntentResult(
+      status: PaymentStatus.succeeded,
+      paymentIntentId: 'pi_test123',
+    );
+  }
+
+  /// Create failed 3DS result
+  static PaymentIntentResult createFailed3DSResult() {
+    return PaymentIntentResult(
+      status: PaymentStatus.failed,
+      errorMessage: '3D Secure authentication failed',
+    );
+  }
+
+  /// Create cancelled 3DS result
+  static PaymentIntentResult createCancelled3DSResult() {
+    return PaymentIntentResult(
+      status: PaymentStatus.cancelled,
+      errorMessage: 'Authentication was cancelled',
+    );
+  }
+
+  /// Create Stripe initialization error
+  static PaymentException createStripeInitError() {
+    return const PaymentException(
+      message: 'Failed to initialize Stripe SDK',
+      code: 'STRIPE_INIT_ERROR',
+    );
+  }
+
+  /// Create card error
+  static PaymentException createCardError() {
+    return const PaymentException(
+      message: 'Your card was declined',
+      code: 'CARD_DECLINED',
+    );
+  }
+
+  // Standard delays for mocked responses (realistic but fast)
+  static const Duration standardDelay = Duration(milliseconds: 200);
+  static const Duration paymentDelay = Duration(milliseconds: 800);
+  static const Duration authenticationDelay = Duration(milliseconds: 1200);
+}
+
 /// Configuration for mock response behaviors
 class MockConfig {
   /// Whether to simulate loading delays
   static bool enableDelays = true;
-  
+
   /// Whether to simulate network errors
   static bool simulateNetworkErrors = false;
-  
+
   /// Whether to simulate server errors
   static bool simulateServerErrors = false;
-  
+
   /// Whether to return empty data sets
   static bool returnEmptyData = false;
-  
+
+  /// Payment-specific configuration flags
+  static bool simulatePaymentFailure = false;
+  static bool simulateRequires3DS = false;
+  static bool simulate3DSFailure = false;
+  static bool simulate3DSCancellation = false;
+  static bool simulateCardError = false;
+  static bool simulateStripeInitError = false;
+
   /// Reset to default testing configuration
   static void resetToDefaults() {
     enableDelays = true;
     simulateNetworkErrors = false;
     simulateServerErrors = false;
     returnEmptyData = false;
+    simulatePaymentFailure = false;
+    simulateRequires3DS = false;
+    simulate3DSFailure = false;
+    simulate3DSCancellation = false;
+    simulateCardError = false;
+    simulateStripeInitError = false;
   }
-  
+
   /// Configure for ultra-fast testing
   static void configureForSpeed() {
     enableDelays = false;
     simulateNetworkErrors = false;
     simulateServerErrors = false;
     returnEmptyData = false;
+    simulatePaymentFailure = false;
+    simulateRequires3DS = false;
+    simulate3DSFailure = false;
+    simulate3DSCancellation = false;
+    simulateCardError = false;
+    simulateStripeInitError = false;
   }
-  
+
   /// Configure for error testing
   static void configureForErrorTesting() {
     enableDelays = true;
     simulateNetworkErrors = true;
     simulateServerErrors = true;
     returnEmptyData = false;
+    simulatePaymentFailure = false;
+    simulateRequires3DS = false;
+    simulate3DSFailure = false;
+    simulate3DSCancellation = false;
+    simulateCardError = false;
+    simulateStripeInitError = false;
   }
-  
+
   /// Configure for empty state testing
   static void configureForEmptyState() {
     enableDelays = false;
     simulateNetworkErrors = false;
     simulateServerErrors = false;
     returnEmptyData = true;
+    simulatePaymentFailure = false;
+    simulateRequires3DS = false;
+    simulate3DSFailure = false;
+    simulate3DSCancellation = false;
+    simulateCardError = false;
+    simulateStripeInitError = false;
+  }
+
+  /// Configure for payment error testing
+  static void configureForPaymentErrors() {
+    enableDelays = true;
+    simulateNetworkErrors = false;
+    simulateServerErrors = false;
+    returnEmptyData = false;
+    simulatePaymentFailure = true;
+    simulateRequires3DS = false;
+    simulate3DSFailure = false;
+    simulate3DSCancellation = false;
+    simulateCardError = true;
+    simulateStripeInitError = false;
+  }
+
+  /// Configure for 3DS testing
+  static void configureFor3DSTesting() {
+    enableDelays = true;
+    simulateNetworkErrors = false;
+    simulateServerErrors = false;
+    returnEmptyData = false;
+    simulatePaymentFailure = false;
+    simulateRequires3DS = true;
+    simulate3DSFailure = false;
+    simulate3DSCancellation = false;
+    simulateCardError = false;
+    simulateStripeInitError = false;
   }
 }

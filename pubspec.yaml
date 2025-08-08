@@ -40,7 +40,8 @@ dependencies:
   form_builder_validators: ^11.0.0
   
   # Payment
-  # flutter_stripe: ^9.5.0
+  flutter_stripe: ^10.1.1
+  webview_flutter: ^4.4.2  # For 3DS authentication
   
   # Video
   video_player: ^2.8.0

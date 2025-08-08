@@ -9,12 +9,16 @@ import 'package:ukcpa_flutter/domain/repositories/auth_repository.dart';
 import 'package:ukcpa_flutter/domain/repositories/terms_repository.dart';
 import 'package:ukcpa_flutter/domain/repositories/basket_repository.dart';
 import 'package:ukcpa_flutter/domain/repositories/course_repository.dart';
-import 'package:ukcpa_flutter/domain/entities/user.dart';
+import 'package:ukcpa_flutter/domain/repositories/checkout_repository.dart';
+import 'package:ukcpa_flutter/domain/entities/user.dart' hide Address;
 import 'package:ukcpa_flutter/domain/entities/term.dart';
 import 'package:ukcpa_flutter/domain/entities/course_group.dart';
-import 'package:ukcpa_flutter/domain/entities/course.dart';
+import 'package:ukcpa_flutter/domain/entities/course.dart' hide Address;
 import 'package:ukcpa_flutter/domain/entities/course_session.dart';
 import 'package:ukcpa_flutter/domain/entities/basket.dart';
+import 'package:ukcpa_flutter/domain/entities/checkout.dart';
+import 'package:ukcpa_flutter/services/stripe_payment_service.dart';
+import 'package:flutter_stripe/flutter_stripe.dart' as stripe;
 import 'mock_data_factory.dart';
 
 // ============================================================================
@@ -640,6 +644,225 @@ class MockCourseRepository extends Mock implements CourseRepository {
 }
 
 // ============================================================================
+// CHECKOUT REPOSITORY MOCK
+// ============================================================================
+
+/// Mock Checkout Repository using centralized data factory
+class MockCheckoutRepository extends Mock implements CheckoutRepository {
+  
+  @override
+  Future<List<PaymentMethod>> getPaymentMethods() async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.minimalDelay);
+    }
+    
+    if (MockConfig.simulateNetworkErrors) {
+      throw MockDataFactory.createNetworkError();
+    }
+    
+    return MockDataFactory.createPaymentMethods();
+  }
+  
+  @override
+  Future<String> getStripePublishableKey() async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.minimalDelay);
+    }
+    
+    return MockDataFactory.createStripePublishableKey();
+  }
+  
+  @override
+  Future<PaymentMethod> createPaymentMethod({
+    required String stripePaymentMethodId,
+    required Address billingAddress,
+    bool setAsDefault = false,
+  }) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.standardDelay);
+    }
+    
+    if (MockConfig.simulateNetworkErrors) {
+      throw MockDataFactory.createNetworkError();
+    }
+    
+    return MockDataFactory.createPaymentMethod(
+      id: stripePaymentMethodId,
+      billingAddress: billingAddress,
+      isDefault: setAsDefault,
+    );
+  }
+  
+  @override
+  Future<bool> deletePaymentMethod(String paymentMethodId) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.minimalDelay);
+    }
+    
+    if (MockConfig.simulateNetworkErrors) {
+      throw MockDataFactory.createNetworkError();
+    }
+    
+    return true;
+  }
+  
+  @override
+  Future<bool> setDefaultPaymentMethod(String paymentMethodId) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.minimalDelay);
+    }
+    
+    return true;
+  }
+  
+  @override
+  Future<PaymentResult> placeOrder({
+    required Basket basket,
+    String? paymentMethodId,
+    required String paymentMethodType,
+    Address? billingAddress,
+    Map<String, dynamic>? lineItemInfo,
+  }) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.paymentDelay);
+    }
+    
+    if (MockConfig.simulatePaymentFailure) {
+      return MockDataFactory.createFailedPaymentResult();
+    }
+    
+    if (MockConfig.simulateRequires3DS) {
+      return MockDataFactory.createRequires3DSPaymentResult();
+    }
+    
+    return MockDataFactory.createSuccessfulPaymentResult(basket);
+  }
+  
+  @override
+  Future<bool> updatePaymentIntent(String paymentIntentId) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.minimalDelay);
+    }
+    
+    return !MockConfig.simulatePaymentFailure;
+  }
+  
+  @override
+  Future<Order?> getOrder(String orderId) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.minimalDelay);
+    }
+    
+    return MockDataFactory.createOrder();
+  }
+  
+  @override
+  Future<List<Order>> getOrderHistory({int limit = 20, int offset = 0}) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.minimalDelay);
+    }
+    
+    return MockDataFactory.createOrderHistory(limit: limit);
+  }
+  
+  @override
+  Future<bool> cancelOrder(String orderId) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.minimalDelay);
+    }
+    
+    return true;
+  }
+  
+  @override
+  Future<bool> processRefund({
+    required String orderId,
+    required int amount,
+    String? reason,
+  }) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.standardDelay);
+    }
+    
+    return !MockConfig.simulatePaymentFailure;
+  }
+}
+
+// ============================================================================
+// STRIPE PAYMENT SERVICE MOCK
+// ============================================================================
+
+/// Mock Stripe Payment Service for testing
+class MockStripePaymentService extends Mock implements StripePaymentService {
+  
+  @override
+  Future<void> initialize() async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.minimalDelay);
+    }
+    
+    if (MockConfig.simulateStripeInitError) {
+      throw MockDataFactory.createStripeInitError();
+    }
+  }
+  
+  @override
+  Future<stripe.PaymentMethod> createPaymentMethod({
+    required Map<String, dynamic> cardDetails,
+    stripe.BillingDetails? billingDetails,
+  }) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.standardDelay);
+    }
+    
+    if (MockConfig.simulateCardError) {
+      throw MockDataFactory.createCardError();
+    }
+    
+    // Return a simple mock PaymentMethod-like object
+    throw UnimplementedError('Stripe PaymentMethod creation not needed for unit tests');
+  }
+  
+  @override
+  Future<PaymentIntentResult> confirmCardPayment({
+    required String clientSecret,
+  }) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.paymentDelay);
+    }
+    
+    if (MockConfig.simulateRequires3DS) {
+      return MockDataFactory.createRequires3DSResult();
+    }
+    
+    if (MockConfig.simulatePaymentFailure) {
+      return MockDataFactory.createFailedPaymentIntentResult();
+    }
+    
+    return MockDataFactory.createSuccessfulPaymentIntentResult();
+  }
+  
+  @override
+  Future<PaymentIntentResult> handle3DSAuthentication({
+    required String clientSecret,
+  }) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.authenticationDelay);
+    }
+    
+    if (MockConfig.simulate3DSFailure) {
+      return MockDataFactory.createFailed3DSResult();
+    }
+    
+    if (MockConfig.simulate3DSCancellation) {
+      return MockDataFactory.createCancelled3DSResult();
+    }
+    
+    return MockDataFactory.createSuccessful3DSResult();
+  }
+}
+
+// ============================================================================
 // MOCK REPOSITORY FACTORY
 // ============================================================================
 
@@ -649,6 +872,8 @@ class MockRepositoryFactory {
   static MockTermsRepository? _termsRepository;
   static MockBasketRepository? _basketRepository;
   static MockCourseRepository? _courseRepository;
+  static MockCheckoutRepository? _checkoutRepository;
+  static MockStripePaymentService? _stripePaymentService;
   
   /// Get or create mock auth repository
   static MockAuthRepository getAuthRepository() {
@@ -670,12 +895,24 @@ class MockRepositoryFactory {
     return _courseRepository ??= MockCourseRepository();
   }
   
+  /// Get or create mock checkout repository
+  static MockCheckoutRepository getCheckoutRepository() {
+    return _checkoutRepository ??= MockCheckoutRepository();
+  }
+  
+  /// Get or create mock stripe payment service
+  static MockStripePaymentService getStripePaymentService() {
+    return _stripePaymentService ??= MockStripePaymentService();
+  }
+  
   /// Reset all repository instances (useful for test isolation)
   static void resetAll() {
     _authRepository = null;
     _termsRepository = null;
     _basketRepository = null;
     _courseRepository = null;
+    _checkoutRepository = null;
+    _stripePaymentService = null;
   }
   
   /// Configure all repositories for specific test scenarios

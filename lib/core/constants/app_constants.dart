@@ -71,4 +71,20 @@ class AppConstants {
   static const String ukcpaSite = 'UKCPA';
   static const String catsSite = 'CATS';
   static const String eventsSite = 'EVENTS';
+  
+  // Stripe Configuration
+  static const String stripePublishableKey = String.fromEnvironment(
+    'STRIPE_PUBLISHABLE_KEY',
+    defaultValue: 'pk_test_YOUR_TEST_KEY_HERE', // Fallback for development
+  );
+  
+  static const String stripeMerchantId = 'merchant.com.ukcpa.app';
+  static const String stripeReturnUrl = 'stripesdk://payment_return_url/ukcpa';
+  static const String stripeCountryCode = 'GB';
+  static const String stripeCurrency = 'GBP';
+  
+  // Stripe Test Cards (for development reference)
+  static const String stripeTestCardSuccess = '4242424242424242';
+  static const String stripeTestCard3DS = '4000002500003155';
+  static const String stripeTestCardDeclined = '4000000000000002';
 }

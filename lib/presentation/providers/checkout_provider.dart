@@ -1,10 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_stripe/flutter_stripe.dart' as stripe;
 import 'package:logger/logger.dart';
 import '../../domain/entities/checkout.dart';
 import '../../domain/entities/basket.dart';
 import '../../domain/repositories/checkout_repository.dart';
 import '../../data/repositories/checkout_repository_impl.dart';
+import '../../services/stripe_payment_service.dart';
+import '../../core/errors/payment_exception.dart';
 import '../providers/graphql_provider.dart'; 
 import '../providers/basket_provider.dart';
 
@@ -56,9 +59,10 @@ final checkoutRepositoryProvider = Provider<CheckoutRepository>((ref) {
 /// Checkout state notifier
 class CheckoutNotifier extends StateNotifier<CheckoutState> {
   final CheckoutRepository _checkoutRepository;
+  final StripePaymentService _stripeService;
   final Logger _logger = Logger();
 
-  CheckoutNotifier(this._checkoutRepository) : super(const CheckoutInitial());
+  CheckoutNotifier(this._checkoutRepository, this._stripeService) : super(const CheckoutInitial());
 
   /// Initialize checkout session with basket
   Future<void> initializeCheckout(Basket basket) async {
@@ -70,6 +74,9 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
     state = const CheckoutLoading();
 
     try {
+      // Initialize Stripe SDK
+      await _stripeService.initialize();
+      
       // Get available payment methods
       final paymentMethods = await _checkoutRepository.getPaymentMethods();
       
@@ -141,7 +148,80 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
     }
   }
 
-  /// Add a new payment method
+  /// Create and add a new payment method from card details
+  Future<bool> createPaymentMethodFromCard({
+    required Map<String, dynamic> cardDetails,
+    required String email,
+    required String name,
+    required BillingAddress billingAddress,
+    bool setAsDefault = false,
+  }) async {
+    try {
+      state = const CheckoutProcessing('Adding payment method...');
+      
+      // Create Stripe payment method
+      final stripeBillingDetails = StripePaymentService.createBillingDetails(
+        email: email,
+        name: name,
+        address: billingAddress,
+      );
+      
+      final stripePaymentMethod = await _stripeService.createPaymentMethod(
+        cardDetails: cardDetails,
+        billingDetails: stripeBillingDetails,
+      );
+
+      // Convert BillingAddress to Address for backend
+      final backendAddress = Address(
+        name: name,
+        line1: billingAddress.line1,
+        line2: billingAddress.line2,
+        city: billingAddress.city,
+        county: billingAddress.county,
+        postCode: billingAddress.postcode,
+        country: 'United Kingdom', // Default for UKCPA
+        countryCode: billingAddress.countryCode,
+      );
+
+      // Save to backend
+      final paymentMethod = await _checkoutRepository.createPaymentMethod(
+        stripePaymentMethodId: stripePaymentMethod.id,
+        billingAddress: backendAddress,
+        setAsDefault: setAsDefault,
+      );
+
+      final currentState = state;
+      if (currentState is CheckoutLoaded) {
+        final updatedMethods = [
+          ...currentState.session.availablePaymentMethods,
+          paymentMethod,
+        ];
+        
+        final updatedSession = currentState.session.copyWith(
+          availablePaymentMethods: updatedMethods,
+          selectedPaymentMethod: setAsDefault ? paymentMethod : currentState.session.selectedPaymentMethod,
+          billingAddress: backendAddress,
+        );
+        
+        state = CheckoutLoaded(updatedSession);
+        _logger.d('Added payment method: ${paymentMethod.id}');
+        return true;
+      }
+      
+      return false;
+    } on PaymentException catch (e) {
+      _logger.e('Payment error adding payment method: ${e.message}');
+      state = CheckoutError(e.message, errorCode: e.code);
+      return false;
+    } catch (e, stackTrace) {
+      _logger.e('Error adding payment method: $e');
+      _logger.e('Stack trace: $stackTrace');
+      state = CheckoutError('Failed to add payment method: ${e.toString()}');
+      return false;
+    }
+  }
+
+  /// Add a new payment method (legacy method - keeping for compatibility)
   Future<bool> addPaymentMethod({
     required String stripePaymentMethodId,
     required Address billingAddress,
@@ -250,7 +330,73 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
     }
   }
 
-  /// Handle 3DS authentication completion
+  /// Handle 3DS authentication with Stripe
+  Future<bool> handle3DSAuthentication(String clientSecret) async {
+    final currentState = state;
+    if (currentState is! CheckoutLoaded || currentState.session.clientSecret != clientSecret) {
+      state = const CheckoutError('Invalid authentication state');
+      return false;
+    }
+
+    try {
+      state = const CheckoutProcessing('Authenticating payment...');
+
+      // Use Stripe service to handle 3DS authentication
+      final result = await _stripeService.handle3DSAuthentication(
+        clientSecret: clientSecret,
+      );
+
+      if (result.isSuccess) {
+        // Update backend with successful payment
+        if (result.paymentIntentId != null) {
+          final success = await _checkoutRepository.updatePaymentIntent(result.paymentIntentId!);
+          if (success) {
+            _logger.d('3DS authentication completed successfully');
+            // Let the UI handle next steps - this will typically show success
+            return true;
+          }
+        }
+        return true;
+      } else if (result.isFailed) {
+        state = CheckoutError(
+          result.errorMessage ?? 'Authentication failed',
+          errorCode: 'AUTH_FAILED',
+        );
+        return false;
+      } else if (result.isCancelled) {
+        // User cancelled 3DS - return to checkout flow
+        final updatedSession = currentState.session.copyWith(
+          clientSecret: null,
+          isProcessing: false,
+        );
+        state = CheckoutLoaded(updatedSession);
+        return false;
+      }
+
+      state = const CheckoutError('Unknown authentication result');
+      return false;
+    } on PaymentException catch (e) {
+      _logger.e('Payment error during 3DS: ${e.message}');
+      if (e.isUserCancellation) {
+        // User cancelled - return to checkout flow
+        final updatedSession = currentState.session.copyWith(
+          clientSecret: null,
+          isProcessing: false,
+        );
+        state = CheckoutLoaded(updatedSession);
+      } else {
+        state = CheckoutError(e.message, errorCode: e.code);
+      }
+      return false;
+    } catch (e, stackTrace) {
+      _logger.e('Error handling 3DS authentication: $e');
+      _logger.e('Stack trace: $stackTrace');
+      state = CheckoutError('Authentication failed: ${e.toString()}');
+      return false;
+    }
+  }
+
+  /// Handle 3DS authentication completion (legacy method - keeping for compatibility)
   Future<bool> complete3DSAuthentication(String paymentIntentId) async {
     try {
       state = const CheckoutProcessing('Completing authentication...');
@@ -311,7 +457,8 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
 /// Main checkout provider
 final checkoutNotifierProvider = StateNotifierProvider<CheckoutNotifier, CheckoutState>((ref) {
   final repository = ref.watch(checkoutRepositoryProvider);
-  return CheckoutNotifier(repository);
+  final stripeService = ref.watch(stripePaymentServiceProvider);
+  return CheckoutNotifier(repository, stripeService);
 });
 
 /// Convenience providers for UI consumption
