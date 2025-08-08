@@ -62,7 +62,7 @@ void main() {
         isAcceptingDeposits: true,
         instructions: 'Bring comfortable clothes',
         address: address,
-        displayStatus: DisplayStatus.published,
+        displayStatus: DisplayStatus.live,
       );
 
       expect(course.subtitle, equals('Master the art of ballet'));
@@ -108,7 +108,7 @@ void main() {
           name: 'Test Course',
           price: 100,
           active: true,
-          displayStatus: DisplayStatus.published,
+          displayStatus: DisplayStatus.live,
           fullyBooked: false,
           startDateTime: DateTime.now().add(const Duration(days: 30)),
         );
@@ -122,7 +122,7 @@ void main() {
           name: 'Test Course',
           price: 100,
           active: false,
-          displayStatus: DisplayStatus.published,
+          displayStatus: DisplayStatus.live,
           fullyBooked: false,
         );
 
@@ -135,7 +135,7 @@ void main() {
           name: 'Test Course',
           price: 100,
           active: true,
-          displayStatus: DisplayStatus.published,
+          displayStatus: DisplayStatus.live,
           fullyBooked: true,
         );
 

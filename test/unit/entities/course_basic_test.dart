@@ -65,7 +65,7 @@ void main() {
         name: 'Available Course',
         price: 2500,
         active: true,
-        displayStatus: DisplayStatus.published,
+        displayStatus: DisplayStatus.live,
         fullyBooked: false,
         startDateTime: DateTime.now().add(const Duration(days: 30)),
       );
@@ -87,7 +87,7 @@ void main() {
         id: '1',
         name: 'Test Course',
         price: 2500,
-        displayStatus: DisplayStatus.published,
+        displayStatus: DisplayStatus.live,
       );
 
       final json = course.toJson();

@@ -4,7 +4,7 @@
 /// integration tests. When GraphQL schemas or response structures change,
 /// update the data here to maintain consistency across all tests.
 
-import 'package:ukcpa_flutter/domain/entities/user.dart';
+import 'package:ukcpa_flutter/domain/entities/user.dart' hide Address;
 import 'package:ukcpa_flutter/domain/entities/term.dart';
 import 'package:ukcpa_flutter/domain/entities/course.dart';
 import 'package:ukcpa_flutter/domain/entities/course_group.dart';
@@ -269,6 +269,109 @@ class MockDataFactory {
     ];
   }
   
+  /// Create a mock StudioCourse with specific properties
+  static StudioCourse createTestStudioCourse({
+    String? id,
+    String? name,
+    String? description,
+    int? price,
+    DisplayStatus? displayStatus,
+    DanceType? danceType,
+    Level? level,
+    Location? location,
+    bool? hasTasterClasses,
+    int? tasterPrice,
+  }) {
+    return StudioCourse(
+      id: id ?? '1',
+      name: name ?? 'Ballet Beginners Studio',
+      description: description ?? 'In-person ballet classes for beginners',
+      price: price ?? 4500, // £45.00
+      displayStatus: displayStatus ?? DisplayStatus.live,
+      danceType: danceType ?? DanceType.ballet,
+      level: level ?? Level.beginner,
+      location: location ?? Location.studio1,
+      hasTasterClasses: hasTasterClasses ?? true,
+      tasterPrice: tasterPrice ?? 2500, // £25.00
+      attendanceTypes: [AttendanceType.adults],
+      address: const Address(
+        line1: '123 Dance Street',
+        city: 'London',
+        postCode: 'SW1 1AA',
+      ),
+    );
+  }
+  
+  /// Create a mock OnlineCourse with specific properties
+  static OnlineCourse createTestOnlineCourse({
+    String? id,
+    String? name,
+    String? description,
+    int? price,
+    DisplayStatus? displayStatus,
+    DanceType? danceType,
+    Level? level,
+    bool? hasTasterClasses,
+    int? tasterPrice,
+  }) {
+    return OnlineCourse(
+      id: id ?? '2',
+      name: name ?? 'Jazz Online Classes',
+      description: description ?? 'Online jazz dance classes you can join from home',
+      price: price ?? 3500, // £35.00
+      displayStatus: displayStatus ?? DisplayStatus.live,
+      danceType: danceType ?? DanceType.jazz,
+      level: level ?? Level.intermediate,
+      location: Location.online,
+      hasTasterClasses: hasTasterClasses ?? true,
+      tasterPrice: tasterPrice ?? 2000, // £20.00
+      attendanceTypes: [AttendanceType.adults],
+      zoomMeeting: const ZoomMeeting(
+        meetingId: '123-456-789',
+        password: 'dance123',
+      ),
+    );
+  }
+  
+  /// Create a mock CourseSession 
+  static CourseSession createTestCourseSession({
+    String? id,
+    String? courseId,
+    DateTime? startDateTime,
+    DateTime? endDateTime,
+  }) {
+    final now = DateTime.now();
+    return CourseSession(
+      id: id ?? '1',
+      courseId: courseId ?? '1',
+      startDateTime: startDateTime ?? now.add(const Duration(days: 7)),
+      endDateTime: endDateTime ?? now.add(const Duration(days: 7, hours: 1)),
+    );
+  }
+  
+  /// Create a mock CourseGroup with test courses
+  static CourseGroup createTestCourseGroup({
+    int? id,
+    String? name,
+    String? description,
+    List<Course>? courses,
+  }) {
+    return CourseGroup(
+      id: id ?? 1,
+      name: name ?? 'Test Course Group',
+      description: description ?? 'A group of test courses for integration testing',
+      courses: courses ?? [
+        createCourse(id: '1', name: 'Studio Course in Group', type: 'StudioCourse'),
+        createCourse(id: '2', name: 'Online Course in Group', type: 'OnlineCourse'),
+      ],
+      minPrice: 3500,
+      maxPrice: 4500,
+      attendanceTypes: ['adults'],
+      locations: ['Studio 1', 'Online'],
+      danceType: 'Mixed',
+    );
+  }
+  
   // ============================================================================
   // BASKET DATA
   // ============================================================================
@@ -444,6 +547,8 @@ class MockDataFactory {
   static const Duration dataLoadDelay = Duration(milliseconds: 150);
   static const Duration quickOperationDelay = Duration(milliseconds: 50);
   static const Duration minimalDelay = Duration(milliseconds: 10);
+  static const Duration searchDelay = Duration(milliseconds: 200);
+  static const Duration refreshDelay = Duration(milliseconds: 500);
   
   // ============================================================================
   // ERROR SCENARIOS

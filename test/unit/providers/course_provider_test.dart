@@ -1,23 +1,24 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
 import 'package:ukcpa_flutter/domain/entities/course.dart';
 import 'package:ukcpa_flutter/domain/entities/course_group.dart';
 import 'package:ukcpa_flutter/domain/entities/course_session.dart';
 import 'package:ukcpa_flutter/domain/repositories/course_repository.dart';
 import 'package:ukcpa_flutter/presentation/providers/course_provider.dart';
 
-import 'course_provider_test.mocks.dart';
+// Use centralized mocks for consistency
+import '../../../integration_test/mocks/mock_repositories.dart';
+import '../../../integration_test/mocks/mock_data_factory.dart';
 
-@GenerateMocks([CourseRepository])
 void main() {
   group('Course Provider Tests', () {
     late MockCourseRepository mockRepository;
     late ProviderContainer container;
 
     setUp(() {
-      mockRepository = MockCourseRepository();
+      mockRepository = MockRepositoryFactory.getCourseRepository();
+      MockConfig.configureForSpeed(); // Fast tests
       container = ProviderContainer(
         overrides: [
           courseRepositoryProvider.overrideWithValue(mockRepository),
@@ -52,7 +53,7 @@ void main() {
             level: Level.beginner,
             danceType: DanceType.ballet,
             active: true,
-            displayStatus: DisplayStatus.published,
+            displayStatus: DisplayStatus.live,
             attendanceTypes: [AttendanceType.adults],
             startDateTime: DateTime.now().add(const Duration(days: 7)),
             endDateTime: DateTime.now().add(const Duration(days: 90)),
@@ -108,7 +109,7 @@ void main() {
             level: Level.beginner,
             danceType: DanceType.ballet,
             active: true,
-            displayStatus: DisplayStatus.published,
+            displayStatus: DisplayStatus.live,
             attendanceTypes: [AttendanceType.adults],
             startDateTime: DateTime.now().add(const Duration(days: 7)),
             endDateTime: DateTime.now().add(const Duration(days: 90)),
@@ -123,7 +124,7 @@ void main() {
             level: Level.beginner,
             danceType: DanceType.ballet,
             active: true,
-            displayStatus: DisplayStatus.published,
+            displayStatus: DisplayStatus.live,
             attendanceTypes: [AttendanceType.adults],
             startDateTime: DateTime.now().add(const Duration(days: 7)),
             endDateTime: DateTime.now().add(const Duration(days: 90)),
@@ -199,7 +200,7 @@ void main() {
               level: Level.beginner,
               danceType: DanceType.ballet,
               active: true,
-              displayStatus: DisplayStatus.published,
+              displayStatus: DisplayStatus.live,
               attendanceTypes: [AttendanceType.adults],
               startDateTime: DateTime.now().add(const Duration(days: 7)),
               endDateTime: DateTime.now().add(const Duration(days: 90)),
@@ -256,7 +257,7 @@ void main() {
           level: Level.beginner,
           danceType: DanceType.ballet,
           active: true,
-          displayStatus: DisplayStatus.published,
+          displayStatus: DisplayStatus.live,
           attendanceTypes: [AttendanceType.adults],
           startDateTime: DateTime.now().add(const Duration(days: 7)),
           endDateTime: DateTime.now().add(const Duration(days: 90)),
@@ -376,7 +377,7 @@ void main() {
             level: Level.intermediate,
             danceType: DanceType.ballet,
             active: true,
-            displayStatus: DisplayStatus.published,
+            displayStatus: DisplayStatus.live,
             attendanceTypes: [AttendanceType.adults],
             startDateTime: DateTime.now().add(const Duration(days: 7)),
             endDateTime: DateTime.now().add(const Duration(days: 90)),

@@ -13,7 +13,7 @@ void main() {
         name: 'Ballet Basics Session 1',
         price: 2500, // £25.00 in pence
         active: true,
-        displayStatus: DisplayStatus.published,
+        displayStatus: DisplayStatus.live,
         attendanceTypes: [AttendanceType.adults],
       );
       
@@ -138,7 +138,7 @@ void main() {
         name: 'Kids Ballet',
         price: 1500,
         active: true,
-        displayStatus: DisplayStatus.published,
+        displayStatus: DisplayStatus.live,
         attendanceTypes: [AttendanceType.children],
       );
 
@@ -189,7 +189,7 @@ void main() {
         name: 'Advanced Ballet',
         price: 3500,
         active: true,
-        displayStatus: DisplayStatus.published,
+        displayStatus: DisplayStatus.live,
         attendanceTypes: [AttendanceType.adults],
       );
 

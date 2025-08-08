@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:logger/logger.dart';
+import 'package:logger/logger.dart' as log;
 import '../../domain/entities/course.dart';
 import '../../domain/entities/course_group.dart';
 import '../../domain/entities/course_session.dart';
 import '../../domain/repositories/course_repository.dart';
 import '../../data/repositories/course_repository_impl.dart';
 
-final Logger _logger = Logger();
+final log.Logger _logger = log.Logger();
 
 // Repository provider
 final courseRepositoryProvider = Provider<CourseRepository>((ref) {

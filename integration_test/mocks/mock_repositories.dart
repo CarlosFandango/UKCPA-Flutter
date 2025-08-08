@@ -8,9 +8,12 @@ import 'package:mockito/mockito.dart';
 import 'package:ukcpa_flutter/domain/repositories/auth_repository.dart';
 import 'package:ukcpa_flutter/domain/repositories/terms_repository.dart';
 import 'package:ukcpa_flutter/domain/repositories/basket_repository.dart';
+import 'package:ukcpa_flutter/domain/repositories/course_repository.dart';
 import 'package:ukcpa_flutter/domain/entities/user.dart';
 import 'package:ukcpa_flutter/domain/entities/term.dart';
 import 'package:ukcpa_flutter/domain/entities/course_group.dart';
+import 'package:ukcpa_flutter/domain/entities/course.dart';
+import 'package:ukcpa_flutter/domain/entities/course_session.dart';
 import 'package:ukcpa_flutter/domain/entities/basket.dart';
 import 'mock_data_factory.dart';
 
@@ -342,13 +345,298 @@ class MockBasketRepository extends Mock implements BasketRepository {
 }
 
 // ============================================================================
-// COURSE REPOSITORY MOCK (Future Extension)
+// COURSE REPOSITORY MOCK
 // ============================================================================
 
-/// Placeholder for future course repository mock
-/// Add additional repository mocks here as needed
-class MockCourseRepository {
-  // TODO: Implement when CourseRepository is defined
+/// Mock Course Repository using centralized data factory
+class MockCourseRepository extends Mock implements CourseRepository {
+  
+  @override
+  Future<CourseSearchResult> getCourses({
+    CourseSearchFilters? filters,
+  }) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.searchDelay);
+    }
+    
+    if (MockConfig.simulateNetworkErrors) {
+      throw MockDataFactory.createNetworkError();
+    }
+
+    // Return mock course search result
+    final courses = <Course>[
+      MockDataFactory.createCourse(id: '1', name: 'Ballet Beginners Studio', type: 'StudioCourse'),
+      MockDataFactory.createCourse(id: '2', name: 'Jazz Online Classes', type: 'OnlineCourse'),
+    ];
+    
+    return CourseSearchResult(
+      courses: courses,
+      totalCount: courses.length,
+      hasMore: false,
+      filters: filters ?? const CourseSearchFilters(),
+    );
+  }
+  
+  @override
+  Future<Course?> getCourse(String courseId) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.minimalDelay);
+    }
+    
+    if (courseId == '1') {
+      return MockDataFactory.createCourse(id: '1', name: 'Ballet Beginners Studio', type: 'StudioCourse');
+    } else if (courseId == '2') {
+      return MockDataFactory.createCourse(id: '2', name: 'Jazz Online Classes', type: 'OnlineCourse');
+    }
+    return null;
+  }
+  
+  @override
+  Future<StudioCourse?> getStudioCourse(String courseId) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.minimalDelay);
+    }
+    
+    if (courseId == '1') {
+      return MockDataFactory.createTestStudioCourse();
+    }
+    return null;
+  }
+  
+  @override
+  Future<OnlineCourse?> getOnlineCourse(String courseId) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.minimalDelay);
+    }
+    
+    if (courseId == '2') {
+      return MockDataFactory.createTestOnlineCourse();
+    }
+    return null;
+  }
+  
+  @override
+  Future<List<CourseGroup>> getCourseGroups() async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.searchDelay);
+    }
+    
+    if (MockConfig.simulateNetworkErrors) {
+      throw MockDataFactory.createNetworkError();
+    }
+
+    return [MockDataFactory.createTestCourseGroup()];
+  }
+  
+  @override
+  Future<CourseGroup?> getCourseGroup(String groupId) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.minimalDelay);
+    }
+    
+    if (groupId == '1') {
+      return MockDataFactory.createTestCourseGroup();
+    }
+    return null;
+  }
+  
+  @override
+  Future<List<Course>> getCoursesInGroup(String groupId) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.searchDelay);
+    }
+    
+    return <Course>[
+      MockDataFactory.createCourse(name: 'Studio Course in Group', type: 'StudioCourse'),
+      MockDataFactory.createCourse(name: 'Online Course in Group', type: 'OnlineCourse'),
+    ];
+  }
+  
+  @override
+  Future<List<CourseSession>> getCourseSessions(String courseId) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.searchDelay);
+    }
+    
+    return [MockDataFactory.createTestCourseSession()];
+  }
+  
+  @override
+  Future<CourseSession?> getCourseSession(String sessionId) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.minimalDelay);
+    }
+    
+    if (sessionId == '1') {
+      return MockDataFactory.createTestCourseSession();
+    }
+    return null;
+  }
+  
+  @override
+  Future<List<CourseSession>> getUpcomingSessions(String courseId) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.searchDelay);
+    }
+    
+    return [MockDataFactory.createTestCourseSession()];
+  }
+  
+  @override
+  Future<CourseSearchResult> searchCourses(
+    String query, {
+    CourseSearchFilters? filters,
+  }) async {
+    return getCourses(filters: filters);
+  }
+  
+  @override
+  Future<List<Course>> getFeaturedCourses({int? limit}) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.searchDelay);
+    }
+    
+    return <Course>[MockDataFactory.createCourse(name: 'Test Studio Course', type: 'StudioCourse')];
+  }
+  
+  @override
+  Future<List<Course>> getPopularCourses({int? limit}) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.searchDelay);
+    }
+    
+    return <Course>[MockDataFactory.createCourse(name: 'Test Online Course', type: 'OnlineCourse')];
+  }
+  
+  @override
+  Future<List<Course>> getCoursesByDanceType(
+    DanceType danceType, {
+    CourseSearchFilters? filters,
+  }) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.searchDelay);
+    }
+    
+    return <Course>[MockDataFactory.createCourse(name: 'Test Studio Course', type: 'StudioCourse')];
+  }
+  
+  @override
+  Future<List<Course>> getCoursesByLevel(
+    Level level, {
+    CourseSearchFilters? filters,
+  }) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.searchDelay);
+    }
+    
+    return <Course>[MockDataFactory.createCourse(name: 'Test Studio Course', type: 'StudioCourse')];
+  }
+  
+  @override
+  Future<List<Course>> getCoursesByLocation(
+    Location location, {
+    CourseSearchFilters? filters,
+  }) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.searchDelay);
+    }
+    
+    return <Course>[MockDataFactory.createCourse(name: 'Test Studio Course', type: 'StudioCourse')];
+  }
+  
+  @override
+  Future<List<Course>> getCoursesForAge(
+    int age, {
+    CourseSearchFilters? filters,
+  }) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.searchDelay);
+    }
+    
+    return <Course>[MockDataFactory.createCourse(name: 'Test Studio Course', type: 'StudioCourse')];
+  }
+  
+  @override
+  Future<List<Course>> getCoursesWithTasters({
+    CourseSearchFilters? filters,
+  }) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.searchDelay);
+    }
+    
+    return <Course>[MockDataFactory.createCourse(name: 'Test Studio Course', type: 'StudioCourse')];
+  }
+  
+  @override
+  Future<List<Course>> getRecommendedCourses({
+    List<DanceType>? preferredDanceTypes,
+    List<Level>? preferredLevels,
+    int? age,
+    CourseSearchFilters? filters,
+  }) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.searchDelay);
+    }
+    
+    return <Course>[MockDataFactory.createCourse(name: 'Test Studio Course', type: 'StudioCourse')];
+  }
+  
+  @override
+  Future<List<Course>> getCoursesStartingSoon({
+    int? days = 7,
+    CourseSearchFilters? filters,
+  }) async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.searchDelay);
+    }
+    
+    return <Course>[MockDataFactory.createCourse(name: 'Test Studio Course', type: 'StudioCourse')];
+  }
+  
+  @override
+  Future<CourseFilterOptions> getFilterOptions() async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.minimalDelay);
+    }
+    
+    return const CourseFilterOptions(
+      availableDanceTypes: [DanceType.ballet, DanceType.jazz],
+      availableLevels: [Level.beginner, Level.intermediate],
+      availableLocations: [Location.studio1, Location.online],
+      availableAttendanceTypes: [AttendanceType.adults, AttendanceType.children],
+      minPrice: 1000,
+      maxPrice: 5000,
+      minAge: 5,
+      maxAge: 65,
+    );
+  }
+  
+  @override
+  Future<void> refreshCourses() async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.refreshDelay);
+    }
+  }
+  
+  @override
+  Future<void> clearCache() async {
+    if (MockConfig.enableDelays) {
+      await Future.delayed(MockDataFactory.minimalDelay);
+    }
+  }
+  
+  @override
+  Future<List<Course>> getCachedCourses() async {
+    return <Course>[
+      MockDataFactory.createCourse(name: 'Cached Studio Course', type: 'StudioCourse'),
+      MockDataFactory.createCourse(name: 'Cached Online Course', type: 'OnlineCourse'),
+    ];
+  }
+  
+  @override
+  Future<bool> isDataStale() async {
+    return false; // Mock data is never stale
+  }
 }
 
 // ============================================================================
@@ -360,6 +648,7 @@ class MockRepositoryFactory {
   static MockAuthRepository? _authRepository;
   static MockTermsRepository? _termsRepository;
   static MockBasketRepository? _basketRepository;
+  static MockCourseRepository? _courseRepository;
   
   /// Get or create mock auth repository
   static MockAuthRepository getAuthRepository() {
@@ -376,11 +665,17 @@ class MockRepositoryFactory {
     return _basketRepository ??= MockBasketRepository();
   }
   
+  /// Get or create mock course repository
+  static MockCourseRepository getCourseRepository() {
+    return _courseRepository ??= MockCourseRepository();
+  }
+  
   /// Reset all repository instances (useful for test isolation)
   static void resetAll() {
     _authRepository = null;
     _termsRepository = null;
     _basketRepository = null;
+    _courseRepository = null;
   }
   
   /// Configure all repositories for specific test scenarios

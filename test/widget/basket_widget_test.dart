@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mockito/mockito.dart';
 import 'package:ukcpa_flutter/domain/entities/basket.dart';
 import 'package:ukcpa_flutter/domain/entities/course.dart';
 import 'package:ukcpa_flutter/presentation/providers/basket_provider.dart';
 
-// Use centralized mocks for consistency
+// Use centralized mocks for consistency  
 import '../../integration_test/mocks/mock_repositories.dart';
 import '../../integration_test/mocks/mock_data_factory.dart';
 

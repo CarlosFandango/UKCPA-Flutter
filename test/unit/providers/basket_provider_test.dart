@@ -1,21 +1,22 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ukcpa_flutter/presentation/providers/basket_provider.dart';
 import 'package:ukcpa_flutter/domain/repositories/basket_repository.dart';
 import 'package:ukcpa_flutter/domain/entities/basket.dart';
 import 'package:ukcpa_flutter/domain/entities/course.dart';
 
-import 'basket_provider_test.mocks.dart';
+// Use centralized mocks for consistency
+import '../../../integration_test/mocks/mock_repositories.dart';
+import '../../../integration_test/mocks/mock_data_factory.dart';
 
-@GenerateMocks([BasketRepository])
 void main() {
   late MockBasketRepository mockRepository;
   late ProviderContainer container;
 
   setUp(() {
-    mockRepository = MockBasketRepository();
+    mockRepository = MockRepositoryFactory.getBasketRepository();
+    MockConfig.configureForSpeed(); // Fast tests
     container = ProviderContainer(
       overrides: [
         basketRepositoryProvider.overrideWithValue(mockRepository),

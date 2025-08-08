@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ukcpa_flutter/data/repositories/terms_repository_impl.dart';
 import 'package:ukcpa_flutter/data/graphql/terms_queries.dart';
 import 'package:ukcpa_flutter/domain/entities/term.dart';
+import 'package:ukcpa_flutter/domain/entities/course.dart';
 
 void main() {
   group('TermsRepository Basic Tests', () {
@@ -24,8 +25,7 @@ void main() {
     test('DisplayStatus constants should match server values', () {
       expect(DisplayStatus.draft, equals('DRAFT'));
       expect(DisplayStatus.live, equals('LIVE'));
-      expect(DisplayStatus.published, equals('PUBLISHED'));
-      expect(DisplayStatus.archived, equals('ARCHIVED'));
+      expect(DisplayStatus.preview, equals('PREVIEW'));
     });
 
     test('GraphQL queries should be valid strings', () {
@@ -78,11 +78,11 @@ void main() {
       expect(onlineCourseFragment, contains('recordingUrls'));
     });
 
-    test('Image position fragment should use correct field names', () {
-      expect(imagePositionFragment, contains('X'));
-      expect(imagePositionFragment, contains('Y'));
-      expect(imagePositionFragment, isNot(contains('x')));
-      expect(imagePositionFragment, isNot(contains('y')));
+    test('Position fragment should use correct field names', () {
+      expect(positionFragment, contains('X'));
+      expect(positionFragment, contains('Y'));
+      expect(positionFragment, isNot(contains('x')));
+      expect(positionFragment, isNot(contains('y')));
     });
   });
 }

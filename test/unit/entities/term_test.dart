@@ -7,14 +7,14 @@ void main() {
     late Term testTerm;
     late DateTime startDate;
     late DateTime endDate;
-    late ClassClassHoliday testClassHoliday;
+    late ClassHoliday testClassHoliday;
     late CourseGroup testCourseGroup;
 
     setUp(() {
       startDate = DateTime(2025, 1, 15);
       endDate = DateTime(2025, 4, 15);
       
-      testClassHoliday = ClassClassHoliday(
+      testClassHoliday = ClassHoliday(
         name: 'Spring Break',
         startDateTime: DateTime(2025, 3, 1),
         endDateTime: DateTime(2025, 3, 8),

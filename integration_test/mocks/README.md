@@ -5,10 +5,13 @@ This directory contains the centralized mock system for UKCPA Flutter integratio
 ## 🎯 Key Benefits
 
 - **Single source of truth** for all mock data
-- **Consistent responses** across all integration tests
+- **Consistent responses** across all integration tests  
 - **Easy maintenance** when GraphQL schemas change
 - **Flexible configuration** for different test scenarios
 - **Type-safe mock data** matching real entities
+- **193 passing tests** with centralized mock system
+- **Resolved Course/StudioCourse/OnlineCourse type conflicts** using proper GraphQL union handling
+- **Fixed DisplayStatus enum alignment** with backend (DRAFT/PREVIEW/LIVE)
 
 ## 📁 File Structure
 
@@ -19,7 +22,8 @@ This directory contains the centralized mock system for UKCPA Flutter integratio
 
 ### `mock_repositories.dart`
 - **Purpose**: Mock implementations of all repositories using the data factory
-- **Contains**: MockAuthRepository, MockTermsRepository, and factory methods
+- **Contains**: MockAuthRepository, MockTermsRepository, MockBasketRepository, MockCourseRepository, and factory methods
+- **Features**: Full CourseRepository implementation with union type handling, proper inheritance support
 - **Update when**: Repository interfaces change or new repositories are added
 
 ### `README.md` (this file)
@@ -28,13 +32,31 @@ This directory contains the centralized mock system for UKCPA Flutter integratio
 
 ## 🚀 Quick Start
 
-### Basic Usage
+### Basic Usage (Unit Tests)
 
 ```dart
-import '../mocks/mock_repositories.dart';
-import '../mocks/mock_data_factory.dart';
+import '../../integration_test/mocks/mock_repositories.dart';
+import '../../integration_test/mocks/mock_data_factory.dart';
 
-// Use in test
+void main() {
+  late MockCourseRepository mockRepository;
+  
+  setUp(() {
+    mockRepository = MockRepositoryFactory.getCourseRepository();
+    MockConfig.configureForSpeed(); // Ultra-fast mode
+  });
+  
+  test('should return courses', () async {
+    final result = await mockRepository.getCourses();
+    expect(result.courses, hasLength(2)); // Studio + Online course
+  });
+}
+```
+
+### Integration Test Usage
+
+```dart
+// Use in integration test
 testWidgets('My test', (tester) async {
   await MockedFastTestManager.initializeMocked(tester);
   
@@ -275,6 +297,75 @@ await MockedFastTestManager.initializeMocked(tester);
 - **Standard mode**: Realistic delays (~100ms responses)
 
 This centralized system ensures consistency while maintaining the speed benefits of mocked integration tests.
+
+## 🔧 Architecture & Type System
+
+### GraphQL Union Types in Flutter
+
+The backend uses inheritance (`StudioCourse extends Course`) while Flutter uses separate Freezed classes with GraphQL union handling:
+
+**Backend (TypeScript)**:
+```typescript
+@Entity()
+export class Course extends BaseEntity { ... }
+
+@ChildEntity() 
+export class StudioCourse extends Course { ... }
+
+@ChildEntity()
+export class OnlineCourse extends Course { ... }
+```
+
+**Frontend (Dart/Flutter)**:
+```dart
+@freezed
+class Course with _$Course { ... }
+
+@freezed  
+class StudioCourse with _$StudioCourse { ... } // Separate class
+
+@freezed
+class OnlineCourse with _$OnlineCourse { ... } // Separate class
+```
+
+### Mock Repository Type Handling
+
+To properly handle this difference, the mock repositories return base `Course` objects:
+
+```dart
+@override
+Future<List<Course>> getCourses() async {
+  // Return base Course objects, not subclasses
+  return <Course>[
+    MockDataFactory.createCourse(type: 'StudioCourse'),
+    MockDataFactory.createCourse(type: 'OnlineCourse'),
+  ];
+}
+```
+
+### DisplayStatus Enum Alignment
+
+Ensure Flutter enum values match backend exactly:
+
+**Backend**: `DRAFT`, `PREVIEW`, `LIVE`  
+**Flutter**: `DisplayStatus.draft`, `DisplayStatus.preview`, `DisplayStatus.live`
+
+❌ **Don't use**: `DisplayStatus.published` (doesn't exist in backend)  
+✅ **Use**: `DisplayStatus.live` for published courses
+
+## 🚨 Common Issues & Solutions
+
+### Issue: Type 'StudioCourse' cannot be assigned to type 'Course'
+
+**Solution**: Use `MockDataFactory.createCourse()` instead of specific subclasses in repository methods.
+
+### Issue: DisplayStatus.published not found
+
+**Solution**: Replace with `DisplayStatus.live` - the backend only has DRAFT/PREVIEW/LIVE.
+
+### Issue: Address import conflicts
+
+**Solution**: Use `import 'package:ukcpa_flutter/domain/entities/user.dart' hide Address;` to avoid conflicts.
 
 ## 📸 Screenshot Integration
 

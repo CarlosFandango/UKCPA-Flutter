@@ -6,9 +6,9 @@ This guide documents the proven pattern for creating ultra-fast integration test
 
 **Problem Solved:** Integration tests were taking 60-79 seconds each due to real backend calls, authentication flows, and network latency.
 
-**Solution:** Ultra-fast mocked testing pattern that tests real UI behavior with mocked dependencies.
+**Solution:** Ultra-fast mocked testing pattern with centralized mock system that tests real UI behavior with mocked dependencies.
 
-**Results:** Tests now run in 2-4 seconds each (~20x speed improvement) while testing authentic app functionality.
+**Results:** Tests now run in 2-4 seconds each (~20x speed improvement) while testing authentic app functionality. Mock centralization achieved **193 passing tests** with **consistent data across all test suites**.
 
 ## 📊 Performance Comparison
 
@@ -34,9 +34,29 @@ Test → Real App → Mocked Dependencies → Instant Responses
 
 ## 🔧 Implementation Steps
 
-### Step 1: Create Mock Repository
+### Step 1: Use Centralized Mock System
 
-Create mocked versions of your repositories that return instant responses:
+Import and use the centralized mock system from `integration_test/mocks/`:
+
+```dart
+// Import centralized mocks
+import '../../integration_test/mocks/mock_repositories.dart';
+import '../../integration_test/mocks/mock_data_factory.dart';
+
+void main() {
+  late MockAuthRepository mockRepository;
+  
+  setUp(() {
+    // Use centralized mock factory
+    mockRepository = MockRepositoryFactory.getAuthRepository();
+    MockConfig.configureForSpeed(); // Ultra-fast mode
+  });
+}
+```
+
+### Step 2: Create Mock Repository (Legacy/Custom Approach)
+
+For custom scenarios, create mocked versions that return instant responses:
 
 ```dart
 /// Mock Auth Repository for ultra-fast testing
