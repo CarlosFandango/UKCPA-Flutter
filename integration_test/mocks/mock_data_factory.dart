@@ -593,8 +593,6 @@ class MockDataFactory {
   static bool areValidTestCredentials(String email, String password) {
     return isValidTestEmail(email) && isValidTestPassword(password);
   }
-}
-
 
   // ============================================================================
   // PAYMENT & CHECKOUT DATA
