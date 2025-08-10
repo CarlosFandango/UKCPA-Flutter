@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/logger.dart';
 import 'package:http/http.dart' as http;
 import '../../core/constants/app_constants.dart';
+import '../../core/services/device_info_service.dart';
 
 GraphQLClient? _client;
 final Logger _logger = Logger();
@@ -54,15 +55,18 @@ GraphQLClient getGraphQLClient() {
     },
   );
   
-  // Add site ID header link
-  final Link siteIdLink = Link.function((request, [forward]) {
-    // Add site ID header for multi-tenancy
-    _logger.d('Adding UKCPA site ID header to GraphQL request');
+  // Add device ID and site ID headers link
+  final Link headersLink = Link.function((request, [forward]) async {
+    // Get device ID for guest basket support
+    final deviceId = await DeviceInfoService.getDeviceId();
+    _logger.d('Adding device ID and site ID headers to GraphQL request');
+    
     request = request.updateContextEntry<HttpLinkHeaders>(
       (headers) => HttpLinkHeaders(
         headers: {
           ...headers?.headers ?? {},
           'siteid': 'UKCPA', // Hard-coded for UKCPA site
+          'x-device-id': deviceId, // Device ID for mobile basket support
         },
       ),
     );
@@ -77,10 +81,10 @@ GraphQLClient getGraphQLClient() {
     },
   );
   
-  // Create link chain with error handling and site ID
+  // Create link chain with error handling, device ID, and auth
   final Link link = Link.from([
     errorLink,
-    siteIdLink,
+    headersLink,
     authLink,
     httpLink,
   ]);

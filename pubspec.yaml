@@ -58,6 +58,7 @@ dependencies:
   connectivity_plus: ^5.0.0
   device_info_plus: ^9.1.0
   package_info_plus: ^4.2.0
+  crypto: ^3.0.3
   
   # Platform Features
   # firebase_core: ^2.24.0
