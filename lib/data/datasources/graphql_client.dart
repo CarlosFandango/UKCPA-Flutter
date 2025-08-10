@@ -56,21 +56,20 @@ GraphQLClient getGraphQLClient() {
   );
   
   // Add device ID and site ID headers link
-  final Link headersLink = Link.function((request, [forward]) {
-    return DeviceInfoService.getDeviceId().then((deviceId) {
-      _logger.d('Adding device ID and site ID headers to GraphQL request');
-      
-      request = request.updateContextEntry<HttpLinkHeaders>(
-        (headers) => HttpLinkHeaders(
-          headers: {
-            ...headers?.headers ?? {},
-            'siteid': 'UKCPA', // Hard-coded for UKCPA site
-            'x-device-id': deviceId, // Device ID for mobile basket support
-          },
-        ),
-      );
-      return forward!(request);
-    });
+  final Link headersLink = Link.function((request, [forward]) async* {
+    final deviceId = await DeviceInfoService.getDeviceId();
+    _logger.d('Adding device ID and site ID headers to GraphQL request');
+    
+    request = request.updateContextEntry<HttpLinkHeaders>(
+      (headers) => HttpLinkHeaders(
+        headers: {
+          ...headers?.headers ?? {},
+          'siteid': 'UKCPA', // Hard-coded for UKCPA site
+          'x-device-id': deviceId, // Device ID for mobile basket support
+        },
+      ),
+    );
+    yield* forward!(request);
   });
   
   // Add error handling link

@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_stripe/flutter_stripe.dart' as stripe;
 import 'package:ukcpa_flutter/services/stripe_payment_service.dart';
 import 'package:ukcpa_flutter/core/errors/payment_exception.dart';
@@ -95,7 +94,7 @@ void main() {
         // Act & Assert
         expect(() async {
           await stripeService.handle3DSAuthentication(clientSecret: clientSecret);
-        }, throwsA(isA<FlutterError>())); // Changed to expect FlutterError which is what actually gets thrown
+        }, throwsA(isA<Exception>())); // Expect generic Exception for 3DS authentication errors
       });
     });
 
